@@ -36,7 +36,20 @@ jobs:
           git add prices.json
           if git diff --staged --quiet; then
             echo "변경 없음 — 커밋 생략"
-          else
-            git commit -m "Update prices ($(date -u +%Y-%m-%d))"
-            git push
+            exit 0
           fi
+          git commit -m "Update prices ($(date -u +%Y-%m-%d))"
+          # 충돌(다른 워크플로가 먼저 push) 대비: pull --rebase 후 push, 최대 5회 재시도
+          n=0
+          until [ $n -ge 5 ]; do
+            if git push; then
+              echo "push 성공"
+              exit 0
+            fi
+            echo "push 거부됨 — 원격 변경을 받아 재시도 ($((n+1))/5)"
+            git pull --rebase --autostash origin main || true
+            n=$((n+1))
+            sleep 3
+          done
+          echo "5회 시도 후에도 push 실패"
+          exit 1
