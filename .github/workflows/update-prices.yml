@@ -1,1 +1,43 @@
+name: Update Prices
+
+# 매일 1회 자동 실행 + 수동 실행 버튼
+on:
+  schedule:
+    # UTC 07:30 = KST 16:30 (한국장 마감 직후). 분/시는 UTC 기준.
+    - cron: '30 7 * * 1-5'
+  workflow_dispatch: {}   # Actions 탭에서 손으로도 돌릴 수 있음
+
+# 저장소에 파일을 커밋하기 위한 권한
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install yfinance pykrx
+
+      - name: Fetch prices
+        run: python fetch_prices.py
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add prices.json
+          if git diff --staged --quiet; then
+            echo "변경 없음 — 커밋 생략"
+          else
+            git commit -m "Update prices ($(date -u +%Y-%m-%d))"
+            git push
+          fi
 
