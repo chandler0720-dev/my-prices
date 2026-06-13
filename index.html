@@ -1,0 +1,2813 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>자산관리 대시보드</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--ink:#1a1c20;--mut:#6b7280;--faint:#9aa0a8;--line:#e6e6e1;--card:#fbfbf9;
+--coral:#d85a30;--coralD:#993c1d;--coralL:#f0997b;--coralP:#faece7;
+--blue:#185fa5;--blueM:#378add;--blueL:#85b7eb;--blueP:#e6f1fb;
+--gray:#b4b2a9;--grayL:#d3d1c7}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--ink);
+font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",-apple-system,sans-serif;
+font-size:16px;line-height:1.55}
+.wrap{max-width:1120px;margin:0 auto;padding:30px 26px 60px}
+.num,td,.kv{font-variant-numeric:tabular-nums}
+header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid var(--line)}
+h1{font-size:24px;margin:0;font-weight:700;display:flex;align-items:center;gap:10px}
+h1::before{content:"";width:12px;height:12px;border-radius:3px;background:var(--coral)}
+.chip{font-size:14px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:5px 13px;background:#fff}
+.sp{flex:1}
+button,.btn{font:inherit;font-size:14.5px;padding:8px 16px;border:1px solid #cfcfc8;border-radius:9px;
+background:#fff;color:var(--ink);cursor:pointer}
+button:hover,.btn:hover{background:#f4f4f0}
+button.primary{background:var(--coral);border-color:var(--coral);color:#fff}
+button.primary:hover{background:#c24e28}
+#status{margin:14px 0 4px;font-size:14.5px;color:var(--mut)}
+.msg{border-radius:10px;padding:11px 15px;margin:10px 0;font-size:14.5px;line-height:1.6}
+.msg.err{background:#fcebeb;color:#791f1f;border:1px solid #f0c5c5}
+.msg.warn{background:#faeeda;color:#633806;border:1px solid #ecd9b6}
+h2{font-size:19px;font-weight:700;margin:34px 0 14px;display:flex;align-items:baseline;gap:10px}
+h2 .sub{font-size:14px;font-weight:400;color:var(--mut)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.kl{font-size:14px;color:var(--mut);margin:0 0 6px}
+.kv{font-size:29px;font-weight:700;margin:0;letter-spacing:-0.01em}
+.ks{font-size:13.5px;color:var(--faint);margin:6px 0 0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.card h3{font-size:16.5px;margin:0 0 4px;font-weight:700}
+.card .cap{font-size:13.5px;color:var(--mut);margin:0 0 14px}
+.up{color:var(--coralD)}.dn{color:var(--blue)}
+.toggles{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-size:14px}
+.tg{padding:5px 14px;border:1px solid var(--line);border-radius:999px;background:#fff;cursor:pointer;color:var(--mut)}
+.tg.on{background:var(--coralP);border-color:var(--coral);color:var(--coralD);font-weight:600}
+label.ck{display:flex;align-items:center;gap:6px;color:var(--mut);cursor:pointer;margin-left:auto}
+.donutbox{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.donutbox .cv{position:relative;width:230px;height:230px;flex:none}
+.lg{list-style:none;margin:0;padding:0;font-size:14.5px;flex:1;min-width:180px}
+.lg li{display:flex;align-items:center;gap:9px;padding:3.5px 0;color:var(--ink)}
+.lg .pct{margin-left:auto;color:var(--mut)}
+.lg-dot{width:12px;height:12px;border-radius:4px;flex:none}
+.chart-h{position:relative;height:280px}
+.chart-s{position:relative;height:230px}
+.chart-m{position:relative;height:220px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:1020px;font-size:14.5px}
+th{font-size:13.5px;color:var(--mut);font-weight:600;text-align:right;padding:9px 10px;
+border-bottom:2px solid var(--line);white-space:nowrap;cursor:pointer;user-select:none}
+th:first-child,th.left{text-align:left}
+td{text-align:right;padding:10px;border-bottom:1px solid #efefe9;white-space:nowrap}
+td:first-child,td.left{text-align:left}
+.tname{font-weight:600}.tsub{font-size:12.5px;color:var(--faint)}
+.mk{font-size:12.5px;padding:3px 10px;border-radius:999px;font-weight:600}
+.mk.US{background:var(--coralP);color:var(--coralD)}
+.mk.KR{background:var(--blueP);color:var(--blue)}
+.sumline{font-size:14.5px;color:var(--mut);margin-top:14px;line-height:1.9}
+.sumline b{color:var(--ink);font-weight:600}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0 18px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.stat .kl{font-size:13px}.stat .kv{font-size:21px}
+footer{margin-top:46px;padding-top:18px;border-top:1px solid var(--line);font-size:13.5px;color:var(--faint);line-height:1.9}
+footer b{color:var(--mut);font-weight:600}
+input[type=date]{font:inherit;font-size:14px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;color:var(--ink)}
+/* ── 카테고리 ── */
+.cat-tag{display:inline-block;padding:3px 11px;border-radius:999px;font-size:12.5px;cursor:pointer;
+white-space:nowrap;border:1px solid transparent;transition:opacity .15s}
+.cat-tag:hover{opacity:.8}
+.cat-add{background:#f0efe8;color:var(--faint);border-color:var(--line)}
+.cat-inp{padding:4px 9px;border:1.5px solid var(--coral);border-radius:8px;
+font:inherit;font-size:13px;width:108px;outline:none;background:#fff}
+.cat-cell{min-width:90px;text-align:left !important}
+/* ── 데이터 직접 입력 ── */
+.de-tabs{display:flex;gap:8px;margin-bottom:16px;align-items:center}
+.de-tab{padding:8px 20px;border:1px solid var(--line);border-radius:8px;background:#fff;
+color:var(--mut);cursor:pointer;font:inherit;font-size:14.5px}
+.de-tab.on{background:var(--coralP);border-color:var(--coral);color:var(--coralD);font-weight:600}
+.de-form{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;padding:14px 16px;
+background:#f7f7f3;border-radius:11px;margin-bottom:14px}
+.de-form label{display:flex;flex-direction:column;gap:5px;font-size:13.5px;color:var(--mut)}
+.de-form input,.de-form select{font:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--line);
+border-radius:8px;color:var(--ink);background:#fff;width:118px}
+.de-form input[type=date]{width:148px}
+.de-form select{width:90px}
+.de-form input[type=text].wide{width:136px}
+.de-msg{font-size:13.5px;color:#a01515;margin:2px 0 0;min-height:18px}
+.de-list{margin-top:4px}
+.de-list table{min-width:600px;font-size:13.5px}
+.de-list th{font-size:12.5px;padding:7px 8px}
+.de-list td{padding:8px;border-bottom:1px solid #f0f0ea}
+.de-cnt{font-size:13.5px;color:var(--mut);margin:0 0 10px;font-weight:600}
+.de-empty{color:var(--faint);font-size:13.5px;padding:12px 0}
+.de-del{background:none;border:none;color:var(--faint);cursor:pointer;padding:2px 7px;font-size:14px;border-radius:5px}
+.de-del:hover{color:#c00;background:#faeaea}
+/* ── GitHub URL 패널 ── */
+.gh-panel{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;
+background:var(--blueP);border:1px solid var(--blueL);border-radius:11px;margin:12px 0 4px}
+.gh-label{font-size:13.5px;color:var(--blue);font-weight:600;white-space:nowrap}
+.gh-panel input[type=url]{flex:1;min-width:260px;font:inherit;font-size:13.5px;
+padding:7px 10px;border:1px solid var(--blueL);border-radius:8px;outline:none}
+.gh-panel input[type=url]:focus{border-color:var(--blue)}
+/* ── 수동 입력 행 편집 ── */
+.de-list-table{min-width:600px}
+.de-list-row{cursor:pointer;transition:background .12s}
+.de-list-row:hover{background:var(--coralP)}
+.de-list-row:hover .de-edit-btn{opacity:1}
+.de-edit-row td{padding:0}
+.de-edit-form{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;
+padding:12px 14px;background:#f0f4f9;border-left:3px solid var(--coral)}
+.de-edit-form label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mut)}
+.eif{font:inherit;font-size:13.5px;padding:6px 9px;border:1px solid var(--line);
+border-radius:7px;color:var(--ink);background:#fff;width:105px}
+.eif:focus{border-color:var(--coral);outline:none}
+.eif[type=date]{width:138px}
+.eif select,.eif[type=text]{width:105px}
+.de-edit-btns{display:flex;gap:8px;align-items:center;align-self:flex-end}
+.de-actions{display:flex;gap:4px;justify-content:flex-end;white-space:nowrap}
+.de-edit-btn{background:none;border:none;color:var(--faint);cursor:pointer;
+padding:2px 6px;font-size:14px;border-radius:5px;opacity:0;transition:opacity .15s}
+.de-edit-btn:hover{color:var(--coral);background:var(--coralP)}
+/* ── 배율 컨트롤 ── */
+.zoom-ctrl{display:flex;align-items:center;gap:4px}
+.zoom-ctrl button{padding:5px 10px;font-size:13px;border-radius:7px;min-width:32px}
+#zoomLabel{font-size:13px;color:var(--mut);min-width:42px;text-align:center}
+/* ── 시세 없음 뱃지 ── */
+.no-px-tag{background:#f0efe8;color:var(--faint);font-size:11px;padding:2px 7px;border-radius:999px;margin-left:4px}
+/* ── 초기화 확인 패널 ── */
+.wipe-panel{margin-top:16px;border:1px solid #f0c5c5;border-radius:11px;padding:18px 20px;background:#fcebeb}
+.wipe-warn{font-size:14.5px;color:#791f1f;margin:0 0 12px;line-height:1.6}
+.wipe-warn b{font-weight:700}
+.wipe-list{margin:0 0 16px;padding-left:20px;font-size:14.5px;color:#791f1f;line-height:1.9}
+.wipe-btns{display:flex;gap:10px;align-items:center}
+.wipe-confirm-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.wipe-confirm-row input{font:inherit;font-size:14px;padding:8px 12px;border:1.5px solid #d99;border-radius:8px;width:130px;outline:none}
+.wipe-confirm-row input:focus{border-color:#a01515}
+button.danger:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+/* ── 빈 상태 ── */
+.empty-state{margin:24px 0}
+.es-card{background:var(--card);border:1px dashed #cfcdc4;border-radius:14px;padding:32px 28px;text-align:left}
+.es-title{font-size:18px;font-weight:700;margin-bottom:8px}
+.es-desc{font-size:14.5px;color:var(--mut);margin:0 0 14px}
+.es-list{margin:0 0 14px;padding-left:20px;font-size:14.5px;color:var(--ink);line-height:1.9}
+.es-list b{font-weight:600}
+/* ── 데이터 관리 ── */
+.dm-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dm-gap{flex:1;min-width:20px}
+button.danger{background:#fff;border-color:#d99;color:#a01515}
+button.danger:hover{background:#fbeaea;border-color:#c66}
+.dm-msg{font-size:13.5px;color:var(--mut);margin:12px 0 0;min-height:18px}
+.dm-msg.ok{color:#1d6b3a}
+.dm-msg.warn{color:#633806}
+.dm-msg.err{color:#a01515}
+/* ── 계좌 셀렉터 ── */
+.acct-bar{display:flex;align-items:center;gap:10px;margin:14px 0 4px;flex-wrap:wrap}
+.acct-label{font-size:13.5px;color:var(--mut);font-weight:600}
+.acct-chip{padding:6px 16px;border:1px solid var(--line);border-radius:999px;background:#fff;
+cursor:pointer;color:var(--mut);font-size:14px}
+.acct-chip.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+.acct-chip .ac-sub{font-size:12px;opacity:.7;margin-left:5px}
+/* ── 세그먼트 토글 ── */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg-b{padding:7px 16px;font-size:13.5px;color:var(--mut);cursor:pointer;background:#fff;border-right:1px solid var(--line)}
+.seg-b:last-child{border-right:none}
+.seg-b.on{background:var(--coralP);color:var(--coralD);font-weight:600}
+/* ── 리밸런싱 ── */
+.rebal-note{font-size:13.5px;margin:0 0 12px;padding:9px 13px;border-radius:8px;background:#f3f6f9;color:var(--blue);display:none}
+.rebal-note.warn{background:#faeeda;color:#633806;display:block}
+.tw-inp{width:74px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;font:inherit;font-size:14px;text-align:right}
+.tw-inp:focus{border-color:var(--coral);outline:none}
+.buy{color:var(--coralD);font-weight:600}.sell{color:var(--blue);font-weight:600}
+#rebalTable tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none;color:var(--mut)}
+@media(max-width:560px){.kv{font-size:25px}.wrap{padding:22px 16px 50px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>자산관리 대시보드</h1>
+  <span class="chip" id="chipAsof">기준일 —</span>
+  <span class="chip" id="chipFx">USD/KRW —</span>
+  <span class="sp"></span>
+  <div class="zoom-ctrl">
+    <button id="btnZoomOut" title="화면 축소">A-</button>
+    <span id="zoomLabel">100%</span>
+    <button id="btnZoomIn" title="화면 확대">A+</button>
+  </div>
+  <button id="btnGh">GitHub 가격 불러오기</button>
+  <button id="btnTickers">종목목록 내려받기</button>
+  <button id="btnExport">Excel 내보내기</button>
+  <button class="primary" id="btnUpload">Excel 업로드</button>
+  <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none">
+</header>
+<div id="status">데이터 로드 중…</div>
+<div id="acctBar" class="acct-bar" style="display:none">
+  <span class="acct-label">계좌</span>
+  <span id="acctChips"></span>
+</div>
+<div id="ghPanel" class="gh-panel" style="display:none">
+  <div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:260px">
+    <span class="gh-label">prices.json 주소 (Raw URL 또는 github.com 파일 URL)</span>
+    <input type="url" id="ghUrlInput"
+      placeholder="https://raw.githubusercontent.com/사용자명/저장소/main/prices.json"
+      autocomplete="off" style="width:100%">
+    <span style="font-size:12px;color:var(--mut)">github.com/…/blob/…/prices.json 형식도 자동 변환됩니다.</span>
+  </div>
+  <button id="btnGhFetch" class="primary" style="align-self:flex-start;margin-top:20px">불러오기</button>
+  <button id="btnGhClose" style="align-self:flex-start;margin-top:20px">취소</button>
+  <div id="ghFallback" style="display:none;flex-basis:100%;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
+    <span style="font-size:13px;color:var(--mut)">자동 연결이 막히면(로컬 파일에서 열 때 흔함), GitHub에서 <b>prices.json</b>을 내려받아 직접 올리세요:</span>
+    <button id="btnPricesFile" class="primary" style="margin-left:10px">prices.json 파일 올리기</button>
+    <input type="file" id="pricesFileInput" accept=".json,application/json" style="display:none">
+  </div>
+</div>
+<div id="messages"></div>
+<div id="emptyState" class="empty-state" style="display:none">
+  <div class="es-card">
+    <div class="es-title">표시할 데이터가 없습니다</div>
+    <p class="es-desc">아래 방법으로 데이터를 추가하면 대시보드가 채워집니다.</p>
+    <ul class="es-list">
+      <li>상단 <b>Excel 업로드</b>로 거래·입출금이 담긴 입력양식을 올리기</li>
+      <li><b>데이터 직접 입력</b>에서 거래·입출금을 한 건씩 추가하기</li>
+      <li><b>백업 불러오기</b>로 이전에 저장한 백업을 복원하기</li>
+    </ul>
+    <p class="es-desc" style="margin-bottom:0">시세·환율은 <b>GitHub 가격 불러오기</b> 또는 입력양식의 시세 시트로 채울 수 있습니다.</p>
+    <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
+    <p class="es-desc" style="margin-bottom:10px;color:var(--faint)">대시보드 구조를 먼저 살펴보고 싶으시면 샘플 데이터를 불러올 수 있습니다.</p>
+    <button id="btnLoadSample" class="btn">샘플 데이터로 둘러보기</button>
+  </div>
+</div>
+<datalist id="catlist"></datalist>
+<datalist id="acctlist"></datalist>
+
+<div id="mainContent">
+<h2>요약 <span class="sub" id="sumSub">원화 환산 기준</span></h2>
+<div class="kpis">
+  <div class="kpi"><p class="kl">총 평가액</p><p class="kv" id="kTotal">—</p><p class="ks" id="kTotalSub"></p></div>
+  <div class="kpi"><p class="kl">순투입 원금</p><p class="kv" id="kInvested">—</p><p class="ks" id="kInvestedSub"></p></div>
+  <div class="kpi"><p class="kl">누적 손익</p><p class="kv" id="kPnl">—</p><p class="ks" id="kPnlSub"></p></div>
+  <div class="kpi"><p class="kl">XIRR (연환산)</p><p class="kv" id="kXirr">—</p><p class="ks" id="kXirrSub"></p></div>
+  <div class="kpi"><p class="kl">환율 효과 · 해외 보유분</p><p class="kv" id="kFxEff">—</p><p class="ks" id="kFxEffSub"></p></div>
+</div>
+
+<h2>구성과 추이</h2>
+<div class="grid2">
+  <div class="card">
+    <h3>포트폴리오 비중</h3>
+    <p class="cap">현재 평가액 기준</p>
+    <div class="toggles">
+      <span class="tg on" data-view="ticker">종목별</span>
+      <span class="tg" data-view="mkt">시장별</span>
+      <span class="tg" data-view="ccy">통화별</span>
+      <span class="tg" data-view="cat">유형별</span>
+      <label class="ck"><input type="checkbox" id="ckCash" checked> 현금</label>
+    </div>
+    <div class="donutbox">
+      <div class="cv"><canvas id="cDonut"></canvas></div>
+      <ul class="lg" id="donutLegend"></ul>
+    </div>
+  </div>
+  <div class="card">
+    <h3>자산 추이</h3>
+    <p class="cap">누적 순투입원금 vs 현재 평가액 · 평가액 추이선은 가격히스토리 연동 단계에서 활성화</p>
+    <div class="chart-h"><canvas id="cTrend"></canvas></div>
+  </div>
+</div>
+
+<h2>환율 <span class="sub">해외 보유분 점검</span></h2>
+<div class="grid2">
+  <div class="card">
+    <h3>USD/KRW 추이</h3>
+    <p class="cap" id="fxCap"></p>
+    <div class="chart-h"><canvas id="cFx"></canvas></div>
+  </div>
+  <div class="card">
+    <h3>해외 보유분 평가손익 분해</h3>
+    <p class="cap" id="decompCap"></p>
+    <div class="chart-h"><canvas id="cDecomp"></canvas></div>
+  </div>
+</div>
+
+<!-- 유형별 성과 + 리밸런싱: 카테고리 부여 시 자동 표시 -->
+<div id="catCard" style="display:none;margin-top:16px">
+  <div class="card">
+    <h3>유형별 성과</h3>
+    <p class="cap" id="catCap">보유 종목 기준 · 누적 수익률과 자금가중 연환산(XIRR)을 함께 표기 · 미분류 포함</p>
+    <div class="grid2">
+      <div>
+        <div class="seg" id="catMetricSeg">
+          <span class="seg-b on" data-m="xirr">연환산(XIRR)</span>
+          <span class="seg-b" data-m="ret">누적 수익률</span>
+        </div>
+        <div class="chart-m" style="margin-top:10px"><canvas id="cCat"></canvas></div>
+      </div>
+      <div class="tablewrap" style="align-self:start">
+        <table id="catTable" style="min-width:auto">
+          <thead><tr>
+            <th class="left">유형</th><th>종목</th>
+            <th>평가액</th><th>비중</th><th>누적%</th><th>연환산</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 리밸런싱 -->
+  <div class="card" style="margin-top:16px">
+    <h3>리밸런싱 <span style="font-size:14px;font-weight:400;color:var(--mut)">목표 비중 대비</span></h3>
+    <p class="cap">유형별 목표 비중(%)을 입력하면 현재와의 괴리와 조정 금액을 계산합니다. 목표는 주식 평가액(현금 제외) 기준이며 브라우저에 저장됩니다.</p>
+    <div id="rebalNote" class="rebal-note"></div>
+    <div class="tablewrap">
+      <table id="rebalTable" style="min-width:680px">
+        <thead><tr>
+          <th class="left">유형</th><th>현재 비중</th><th>목표 비중</th>
+          <th>현재 평가액</th><th>목표 평가액</th><th>조정 필요</th>
+        </tr></thead>
+        <tbody></tbody>
+        <tfoot></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<h2>종목별 수익률 <span class="sub">열 제목 클릭으로 정렬 · 카테고리 셀 클릭으로 편집</span></h2>
+<div class="card">
+  <div class="tablewrap">
+    <table id="holdTable">
+      <thead><tr>
+        <th data-k="name">종목</th><th data-k="mkt">시장</th><th data-k="qty">수량</th>
+        <th data-k="avgCost">평균단가</th><th data-k="price">현재가</th>
+        <th data-k="valueKrw">평가액(₩)</th><th data-k="unrealKrw">평가손익(₩)</th>
+        <th data-k="retLocal">수익률(현지)</th><th data-k="retKrw">수익률(₩)</th>
+        <th data-k="divKrw">배당누계(₩)</th><th data-k="weight">비중</th>
+        <th data-k="category" class="left" style="cursor:pointer">카테고리</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="sumline" id="realizedLine"></div>
+</div>
+
+<h2>시점대비 점검 <span class="sub">입출금 반영</span></h2>
+<div class="card">
+  <div class="toggles" id="periodChips">
+    <span class="tg on" data-p="all">전체</span>
+    <span class="tg" data-p="ytd">YTD</span>
+    <span class="tg" data-p="1y">1년</span>
+    <span class="tg" data-p="3y">3년</span>
+    <span class="tg" data-p="custom">직접</span>
+    <input type="date" id="customStart" style="display:none">
+  </div>
+  <div class="statgrid">
+    <div class="stat"><p class="kl">구간 입금</p><p class="kv" id="pDep">—</p></div>
+    <div class="stat"><p class="kl">구간 출금</p><p class="kv" id="pWd">—</p></div>
+    <div class="stat"><p class="kl">구간 실현손익</p><p class="kv" id="pRz">—</p></div>
+    <div class="stat"><p class="kl">구간 배당</p><p class="kv" id="pDv">—</p></div>
+  </div>
+  <div class="chart-s"><canvas id="cFlows"></canvas></div>
+  <p class="cap" style="margin-top:12px" id="periodNote"></p>
+</div>
+</div><!-- /mainContent -->
+
+<h2>데이터 직접 입력 <span class="sub">브라우저 자동 저장 · Excel과 합산</span></h2>
+<div class="card">
+  <p class="cap">입력 내역은 브라우저에 자동 저장되며(localStorage), Excel 업로드 데이터와 합산하여 계산됩니다.</p>
+  <div class="de-tabs">
+    <button class="de-tab on" id="tabTx" data-de="tx">거래내역</button>
+    <button class="de-tab" id="tabFl" data-de="fl">입출금</button>
+    <span class="sp"></span>
+  </div>
+  <!-- 거래내역 -->
+  <div id="paneTx">
+    <div class="de-form">
+      <label>일자<input type="date" id="txDate"></label>
+      <label>시장<select id="txMkt"><option value="KR">KR</option><option value="US">US</option></select></label>
+      <label>티커<input type="text" id="txTicker" placeholder="005930" style="width:100px"></label>
+      <label>종목명<input type="text" id="txName" class="wide" placeholder="삼성전자"></label>
+      <label>구분<select id="txSide"><option>매수</option><option>매도</option></select></label>
+      <label>수량<input type="number" id="txQty" min="0.0001" step="any" placeholder="10"></label>
+      <label>단가<input type="number" id="txPrice" min="0" step="any" placeholder="50000"></label>
+      <label>수수료<input type="number" id="txFee" min="0" step="any" placeholder="0"></label>
+      <label id="txFxWrap" style="display:none">체결환율<input type="number" id="txFxRate" min="0" step="any" placeholder="자동보충"></label>
+      <label>계좌<input type="text" id="txAccount" list="acctlist" placeholder="기본" style="width:100px"></label>
+      <label>유형<input type="text" id="txCat" list="catlist" placeholder="성장주" style="width:100px"></label>
+      <button class="primary" id="btnAddTx" style="align-self:flex-end">+ 추가</button>
+      <span class="de-msg" id="txMsg"></span>
+    </div>
+    <div class="de-list"><div id="txListWrap"></div></div>
+  </div>
+  <!-- 입출금 -->
+  <div id="paneFl" style="display:none">
+    <div class="de-form">
+      <label>일자<input type="date" id="flDate"></label>
+      <label>구분<select id="flKind"><option>입금</option><option>출금</option></select></label>
+      <label>금액<input type="number" id="flAmount" min="0" step="any" placeholder="1000000"></label>
+      <label>통화<select id="flCcy"><option value="KRW">KRW</option><option value="USD">USD</option></select></label>
+      <label>계좌<input type="text" id="flAccount" list="acctlist" placeholder="기본" style="width:100px"></label>
+      <label>메모<input type="text" id="flMemo" class="wide" placeholder="선택"></label>
+      <button class="primary" id="btnAddFl" style="align-self:flex-end">+ 추가</button>
+      <span class="de-msg" id="flMsg"></span>
+    </div>
+    <div class="de-list"><div id="flListWrap"></div></div>
+  </div>
+</div>
+
+<h2>데이터 관리 <span class="sub">백업 · 복원 · 초기화</span></h2>
+<div class="card">
+  <p class="cap">수동 입력 거래·입출금, 카테고리, 목표 비중, GitHub 주소가 브라우저에 저장됩니다. 기기를 바꾸거나 데이터가 사라질 위험에 대비해 백업해 두실 수 있습니다. (Excel 업로드 데이터는 원본 파일로 다시 올리면 되므로 백업에는 포함되지 않습니다.)</p>
+  <div class="dm-row">
+    <button id="btnBackup">백업 다운로드</button>
+    <button id="btnRestore">백업 불러오기</button>
+    <input type="file" id="restoreInput" accept=".json,application/json" style="display:none">
+    <span class="dm-gap"></span>
+    <button id="btnWipe" class="danger">전체 초기화</button>
+  </div>
+  <p class="dm-msg" id="dmMsg"></p>
+
+  <!-- 인라인 초기화 확인 패널 (팝업 대신) -->
+  <div id="wipePanel" class="wipe-panel" style="display:none">
+    <!-- 1단계: 삭제 항목 안내 -->
+    <div id="wipeStep1">
+      <p class="wipe-warn">⚠️ 아래 항목이 <b>모두 삭제</b>됩니다. 이 작업은 되돌릴 수 없습니다.</p>
+      <ul class="wipe-list">
+        <li>수동 입력한 거래·입출금 내역</li>
+        <li>종목 카테고리</li>
+        <li>목표 비중</li>
+        <li>저장된 GitHub 주소</li>
+        <li>업로드한 Excel 데이터 (샘플 포함)</li>
+      </ul>
+      <div class="wipe-btns">
+        <button id="btnWipeCancel1">취소</button>
+        <button id="btnWipeNext" class="danger">계속하기 →</button>
+      </div>
+    </div>
+    <!-- 2단계: 최종 확인 입력 -->
+    <div id="wipeStep2" style="display:none">
+      <p class="wipe-warn">최종 확인: 아래 입력란에 <b>초기화</b> 라고 입력하고 버튼을 누르세요.</p>
+      <div class="wipe-confirm-row">
+        <input type="text" id="wipeConfirmInput" placeholder="초기화" autocomplete="off">
+        <button id="btnWipeConfirm" class="danger" disabled>전체 초기화 실행</button>
+        <button id="btnWipeCancel2">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <b>계산 방법</b> · 평균단가는 이동평균법(매수 수수료 원가 가산, 매도 수수료 매각대금 차감). 해외 종목의 원화 원가는 USD 원가 가중평균 매수환율로 환산.
+  해외 평가손익 분해: 주가요인 = 수량×(현재가−평단)×평균환율, 환율요인 = 수량×평단×(현재환율−평균환율), 교차항 = 잔여.
+  현금은 입출금−매수대금+매도대금+배당으로 추정한 원화 환산 근사치. XIRR은 입출금과 현재 총평가액 기준 연환산 내부수익률(Act/365).
+  분할이벤트 시트의 분할일 이전 거래는 수량×N·단가÷N으로 자동 조정. 미국 거래의 체결환율 공란은 환율히스토리로 보충.<br>
+  <b>데이터</b> · 모든 계산은 이 파일을 연 브라우저 안에서만 수행되며 외부로 전송되지 않습니다. 카테고리·수동 입력 내역은 브라우저 localStorage에만 저장됩니다.
+</footer>
+</div>
+
+<script>
+/* 자산관리 대시보드 계산 엔진 — Python 오라클(build_sample.py)과 동일 규약 */
+(function (root, factory) {
+  if (typeof module !== 'undefined' && module.exports) module.exports = factory();
+  else root.Engine = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  function toNum(v) {
+    if (v === null || v === undefined || v === '') return null;
+    if (typeof v === 'number') return isFinite(v) ? v : null;
+    var s = String(v).replace(/[,₩$\s]/g, '').replace(/원$/, '');
+    if (s === '' || s === '-') return null;
+    var n = Number(s);
+    return isFinite(n) ? n : null;
+  }
+
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+  function toISO(v) {
+    if (v === null || v === undefined || v === '') return null;
+    if (v instanceof Date && !isNaN(v)) {
+      return v.getFullYear() + '-' + pad2(v.getMonth() + 1) + '-' + pad2(v.getDate());
+    }
+    if (typeof v === 'number' && isFinite(v)) {
+      var ms = Date.UTC(1899, 11, 30) + Math.floor(v + 1e-7) * 86400000;
+      var d = new Date(ms);
+      return d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate());
+    }
+    var s = String(v).trim().replace(/[./]/g, '-');
+    var m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (m) return m[1] + '-' + pad2(+m[2]) + '-' + pad2(+m[3]);
+    return null;
+  }
+
+  function days(a, b) {
+    return Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 86400000);
+  }
+
+  function normTicker(t, mkt) {
+    if (t === null || t === undefined) return '';
+    var s = String(t).trim().toUpperCase();
+    if (/^\d+$/.test(s) && (mkt === 'KR' || s.length <= 6)) s = s.padStart(6, '0');
+    return s;
+  }
+
+  /* ---------- 워크북 정규화 ---------- */
+  var ALIAS = {
+    일자: ['일자', '날짜', 'DATE'],
+    기준일시: ['기준일시', '기준일', '일자'],
+    시장: ['시장', 'MARKET'],
+    티커: ['티커', '종목코드', 'TICKER'],
+    종목명: ['종목명', '종목', '이름'],
+    구분: ['구분'],
+    수량: ['수량'],
+    단가: ['단가', '가격'],
+    수수료: ['수수료·제세금', '수수료제세금', '수수료'],
+    체결환율: ['체결환율', '환율'],
+    금액: ['금액'],
+    통화: ['통화'],
+    수령액: ['세후수령액', '세후 수령액', '수령액', '배당금'],
+    비율: ['비율(1주→N주)', '비율'],
+    현재가: ['현재가', '종가', '가격'],
+    환율값: ['USD/KRW', 'USDKRW', '환율'],
+    계좌: ['계좌', '계좌명', 'ACCOUNT', '증권사'],
+  };
+  function headerIndex(headerRow, key) {
+    var cands = ALIAS[key];
+    for (var i = 0; i < headerRow.length; i++) {
+      var h = String(headerRow[i] === null || headerRow[i] === undefined ? '' : headerRow[i]).replace(/\s/g, '');
+      if (!h) continue;
+      for (var j = 0; j < cands.length; j++) {
+        if (h === cands[j].replace(/\s/g, '')) return i;
+      }
+    }
+    return -1;
+  }
+  function rowEmpty(r) {
+    if (!r) return true;
+    for (var i = 0; i < r.length; i++) {
+      if (r[i] !== null && r[i] !== undefined && String(r[i]).trim() !== '') return false;
+    }
+    return true;
+  }
+
+  /* sheets: { 시트명: rows[][] (헤더 포함) } → 정규화 데이터 */
+  function normalizeWorkbook(sheets) {
+    var errors = [], warnings = [];
+    var get = function (name) {
+      for (var k in sheets) { if (k.trim() === name) return sheets[k]; }
+      return null;
+    };
+    ['거래내역', '입출금', '시세스냅샷', '환율히스토리'].forEach(function (n) {
+      if (!get(n)) errors.push('필수 시트 누락: ' + n);
+    });
+    if (errors.length) return { errors: errors, warnings: warnings };
+
+    function parseSheet(name, spec, required) {
+      var rows = get(name);
+      if (!rows || rows.length < 2) {
+        if (required) errors.push(name + ' 시트에 데이터 행이 없습니다.');
+        return [];
+      }
+      var head = rows[0], idx = {};
+      for (var key in spec) {
+        idx[key] = headerIndex(head, spec[key].col);
+        if (idx[key] < 0 && spec[key].req) errors.push(name + ' 시트에 "' + spec[key].col + '" 열이 없습니다.');
+      }
+      var out = [];
+      for (var r = 1; r < rows.length; r++) {
+        if (rowEmpty(rows[r])) continue;
+        var rec = { _row: r + 1 }, bad = false;
+        for (var k2 in spec) {
+          var v = idx[k2] >= 0 ? rows[r][idx[k2]] : null;
+          rec[k2] = v === undefined ? null : v;
+        }
+        out.push(rec);
+      }
+      return out;
+    }
+
+    var names = {};
+    var tx = parseSheet('거래내역', {
+      date: { col: '일자', req: 1 }, mkt: { col: '시장', req: 1 }, ticker: { col: '티커', req: 1 },
+      name: { col: '종목명', req: 0 }, side: { col: '구분', req: 1 }, qty: { col: '수량', req: 1 },
+      price: { col: '단가', req: 1 }, fee: { col: '수수료', req: 0 }, fxRate: { col: '체결환율', req: 0 },
+      account: { col: '계좌', req: 0 },
+    }, true).map(function (r) {
+      var date = toISO(r.date), mkt = String(r.mkt || '').trim().toUpperCase();
+      var side = String(r.side || '').trim();
+      var ticker = normTicker(r.ticker, mkt);
+      var qty = toNum(r.qty), price = toNum(r.price), fee = toNum(r.fee) || 0, fx = toNum(r.fxRate);
+      var account = String(r.account || '').trim() || '기본';
+      if (!date) errors.push('거래내역 ' + r._row + '행: 일자 형식 오류');
+      if (mkt !== 'KR' && mkt !== 'US') errors.push('거래내역 ' + r._row + '행: 시장은 KR 또는 US');
+      if (side !== '매수' && side !== '매도') errors.push('거래내역 ' + r._row + '행: 구분은 매수/매도');
+      if (!ticker) errors.push('거래내역 ' + r._row + '행: 티커 누락');
+      if (!(qty > 0)) errors.push('거래내역 ' + r._row + '행: 수량은 양수');
+      if (!(price > 0)) errors.push('거래내역 ' + r._row + '행: 단가는 양수');
+      if (ticker && r.name) names[ticker] = String(r.name).trim();
+      return { date: date, mkt: mkt, ticker: ticker, side: side, qty: qty || 0, price: price || 0, fee: fee, fxRate: fx, account: account };
+    });
+
+    var flows = parseSheet('입출금', {
+      date: { col: '일자', req: 1 }, kind: { col: '구분', req: 1 },
+      amount: { col: '금액', req: 1 }, ccy: { col: '통화', req: 1 },
+      account: { col: '계좌', req: 0 },
+    }, true).map(function (r) {
+      var date = toISO(r.date), kind = String(r.kind || '').trim();
+      var amount = toNum(r.amount), ccy = String(r.ccy || 'KRW').trim().toUpperCase();
+      var account = String(r.account || '').trim() || '기본';
+      if (!date) errors.push('입출금 ' + r._row + '행: 일자 형식 오류');
+      if (kind !== '입금' && kind !== '출금') errors.push('입출금 ' + r._row + '행: 구분은 입금/출금');
+      if (!(amount > 0)) errors.push('입출금 ' + r._row + '행: 금액은 양수');
+      if (ccy !== 'KRW' && ccy !== 'USD') errors.push('입출금 ' + r._row + '행: 통화는 KRW/USD');
+      return { date: date, kind: kind, amount: amount || 0, ccy: ccy, account: account };
+    });
+
+    var divs = parseSheet('배당', {
+      date: { col: '일자', req: 1 }, ticker: { col: '티커', req: 1 },
+      amount: { col: '수령액', req: 1 }, ccy: { col: '통화', req: 1 },
+      account: { col: '계좌', req: 0 },
+    }, false).map(function (r) {
+      var date = toISO(r.date), amount = toNum(r.amount);
+      var ccy = String(r.ccy || 'KRW').trim().toUpperCase();
+      var account = String(r.account || '').trim() || '기본';
+      if (!date || !(amount > 0)) warnings.push('배당 ' + r._row + '행: 값 확인 필요 — 해당 행 제외');
+      return { date: date, ticker: normTicker(r.ticker, null), amount: amount || 0, ccy: ccy, account: account };
+    }).filter(function (d) { return d.date && d.amount > 0; });
+
+    var splits = parseSheet('분할이벤트', {
+      date: { col: '일자', req: 1 }, ticker: { col: '티커', req: 1 }, ratio: { col: '비율', req: 1 },
+    }, false).map(function (r) {
+      var date = toISO(r.date), ratio = toNum(r.ratio);
+      if (!date || !(ratio > 0)) warnings.push('분할이벤트 ' + r._row + '행: 값 확인 필요 — 해당 행 제외');
+      return { date: date, ticker: normTicker(r.ticker, null), ratio: ratio || 0 };
+    }).filter(function (s) { return s.date && s.ratio > 0; });
+
+    var snapRows = parseSheet('시세스냅샷', {
+      date: { col: '기준일시', req: 1 }, ticker: { col: '티커', req: 1 },
+      mkt: { col: '시장', req: 0 }, price: { col: '현재가', req: 1 }, ccy: { col: '통화', req: 0 },
+    }, false);  // 빈 시트 허용 — 시세는 GitHub/Colab으로 나중에 채울 수 있음
+    var asof = null, prices = [];
+    snapRows.forEach(function (r) {
+      var d = toISO(r.date), p = toNum(r.price);
+      var mkt = String(r.mkt || '').trim().toUpperCase();
+      if (!d || !(p > 0)) { warnings.push('시세스냅샷 ' + r._row + '행: 기준일시/현재가 확인 — 해당 행 제외'); return; }
+      if (!asof || d > asof) asof = d;
+      prices.push({ ticker: normTicker(r.ticker, mkt || null), mkt: mkt, price: p,
+                    ccy: String(r.ccy || '').trim().toUpperCase() });
+    });
+
+    var fx = parseSheet('환율히스토리', {
+      date: { col: '일자', req: 1 }, rate: { col: '환율값', req: 1 },
+    }, false).map(function (r) {  // 빈 시트 허용
+      var d = toISO(r.date), v = toNum(r.rate);
+      if (!d || !(v > 0)) errors.push('환율히스토리 ' + r._row + '행: 값 확인');
+      return { date: d, rate: v || 0 };
+    }).filter(function (r) { return r.date && r.rate > 0; });
+    if (!fx.length) warnings.push('환율히스토리가 비어 있습니다. GitHub 가격 불러오기 또는 Colab으로 환율을 채우면 해외 종목 수익률이 정확해집니다.');
+
+    if (errors.length) return { errors: errors, warnings: warnings };
+    return {
+      errors: [], warnings: warnings,
+      data: { tx: tx, flows: flows, divs: divs, splits: splits,
+              snapshot: { asof: asof, prices: prices }, fx: fx, names: names },
+    };
+  }
+
+  /* ---------- 계산 ---------- */
+  function makeFxLookup(fx) {
+    var s = (fx || []).slice().sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+    var empty = s.length === 0;
+    return {
+      first: empty ? null : s[0], last: empty ? null : s[s.length - 1], series: s, isEmpty: empty,
+      at: function (d) {
+        if (empty) return 1;  // 환율 데이터 없음: 1로 폴백(원화 종목엔 영향 없음)
+        var best = s[0].rate;
+        for (var i = 0; i < s.length; i++) {
+          if (s[i].date <= d) best = s[i].rate; else break;
+        }
+        return best;
+      },
+    };
+  }
+
+  function adjustSplits(tx, splits) {
+    var out = tx.map(function (t) { return Object.assign({}, t); });
+    splits.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (s) {
+      out.forEach(function (t) {
+        if (t.ticker === s.ticker && t.date < s.date) { t.qty *= s.ratio; t.price /= s.ratio; }
+      });
+    });
+    return out;
+  }
+
+  function xirr(cfs) {
+    if (cfs.length < 2) return null;
+    var t0 = cfs[0][0];
+    function npv(r) {
+      var v = 0;
+      for (var i = 0; i < cfs.length; i++) v += cfs[i][1] / Math.pow(1 + r, days(t0, cfs[i][0]) / 365.0);
+      return v;
+    }
+    var lo = -0.999, hi = 10.0, flo = npv(lo), fhi = npv(hi);
+    if (flo * fhi > 0) return null;
+    for (var k = 0; k < 200; k++) {
+      var mid = (lo + hi) / 2, fm = npv(mid);
+      if (flo * fm <= 0) { hi = mid; fhi = fm; } else { lo = mid; flo = fm; }
+    }
+    return (lo + hi) / 2;
+  }
+
+  function listAccounts(data) {
+    var set = {};
+    (data.tx || []).forEach(function (t) { set[t.account || '기본'] = 1; });
+    (data.flows || []).forEach(function (f) { set[f.account || '기본'] = 1; });
+    return Object.keys(set).sort();
+  }
+
+  function compute(data, opts) {
+    var warnings = [], errors = [];
+    var account = opts && opts.account ? opts.account : null;  // null = 전체 합산
+    // 계좌 필터링 (분할조정 전 원본 기준)
+    var srcTx = data.tx, srcFlows = data.flows, srcDivs = data.divs || [];
+    if (account) {
+      srcTx = srcTx.filter(function (t) { return (t.account || '기본') === account; });
+      srcFlows = srcFlows.filter(function (f) { return (f.account || '기본') === account; });
+      srcDivs = srcDivs.filter(function (d) { return (d.account || '기본') === account; });
+    }
+    var FX = makeFxLookup(data.fx);
+    var atx = adjustSplits(srcTx, data.splits || []).sort(function (a, b) {
+      return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+    });
+    var firstFlow = srcFlows.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; })[0];
+    if (firstFlow && FX.first && firstFlow.date < FX.first.date) {
+      warnings.push('환율히스토리 시작(' + FX.first.date + ') 이전 날짜는 첫 환율로 대체 적용됩니다.');
+    }
+    var missFx = 0;
+
+    var pos = {}, realizedTotal = 0, realizedBy = {}, realizedEvents = [];
+    var cfByTicker = {};  // 종목별 KRW 현금흐름: [date, amount] (매수 −, 매도 +)
+    function addCf(tk, date, amt) {
+      (cfByTicker[tk] || (cfByTicker[tk] = [])).push([date, amt]);
+    }
+    for (var i = 0; i < atx.length; i++) {
+      var t = atx[i];
+      var p = pos[t.ticker] || (pos[t.ticker] = { mkt: t.mkt, qty: 0, avgCost: 0, avgFx: 0 });
+      var f = 0;
+      if (t.mkt === 'US') {
+        if (t.fxRate && t.fxRate > 0) f = t.fxRate; else { f = FX.at(t.date); missFx++; }
+      }
+      var rate0 = t.mkt === 'US' ? f : 1;
+      if (t.side === '매수') {
+        var add = t.qty * t.price + t.fee;
+        var prev = p.qty * p.avgCost;
+        var nq = p.qty + t.qty, nc = prev + add;
+        if (t.mkt === 'US') p.avgFx = nc > 0 ? (prev * p.avgFx + add * f) / nc : f;
+        p.qty = nq; p.avgCost = nc / nq;
+        addCf(t.ticker, t.date, -add * rate0);
+      } else {
+        if (t.qty > p.qty + 1e-9) {
+          errors.push(t.date + ' ' + t.ticker + ' 매도 수량(' + t.qty + ')이 보유 수량(' + p.qty + ')을 초과합니다.');
+          continue;
+        }
+        var proceeds = t.qty * t.price - t.fee;
+        var rL = proceeds - t.qty * p.avgCost;
+        var rK = t.mkt === 'US' ? proceeds * f - t.qty * p.avgCost * p.avgFx : rL;
+        realizedTotal += rK;
+        realizedBy[t.ticker] = (realizedBy[t.ticker] || 0) + rK;
+        realizedEvents.push({ date: t.date, ticker: t.ticker, krw: rK });
+        p.qty -= t.qty;
+        addCf(t.ticker, t.date, proceeds * rate0);
+      }
+    }
+
+    var divBy = {}, divTotal = 0;
+    srcDivs.forEach(function (d) {
+      var k = d.ccy === 'USD' ? d.amount * FX.at(d.date) : d.amount;
+      divBy[d.ticker] = (divBy[d.ticker] || 0) + k;
+      divTotal += k;
+      addCf(d.ticker, d.date, k);
+    });
+
+    var today = (function () { var d = new Date(); function p(n){return (n<10?'0':'')+n;} return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); })();
+    var asof = (data.snapshot && data.snapshot.asof) || today, fxNow = FX.at(asof);
+    var priceMap = {};
+    ((data.snapshot && data.snapshot.prices) || []).forEach(function (r) { priceMap[r.ticker] = r.price; });
+
+    var holdings = [], stockKrw = 0, dPrice = 0, dFx = 0, dCross = 0;
+    var usCost = 0, usCostFx = 0, missingPx = [];
+    for (var tk in pos) {
+      var q = pos[tk];
+      if (q.qty <= 1e-9) continue;
+      var px = priceMap[tk];
+      if (!(px > 0)) {
+        // 시세 없는 종목: 부분 보유로 추가 (평가액·수익률은 null, 수량·평단은 표시)
+        missingPx.push(tk);
+        var cK0 = q.mkt === 'US' ? q.qty * q.avgCost * q.avgFx : q.qty * q.avgCost;
+        holdings.push({
+          ticker: tk, name: (data.names && data.names[tk]) || tk, mkt: q.mkt,
+          qty: q.qty, avgCost: q.avgCost, avgFx: q.avgFx, price: 0,
+          valueLocal: 0, valueKrw: 0, costKrw: cK0, unrealKrw: 0,
+          retLocal: null, retKrw: null, divKrw: divBy[tk] || 0, xirr: null,
+          missingPrice: true,   // 화면 표시용 플래그는 유지
+        });
+        continue;
+      }
+      var vL, vK, cK;
+      if (q.mkt === 'US') {
+        vL = q.qty * px; vK = vL * fxNow; cK = q.qty * q.avgCost * q.avgFx;
+        dPrice += q.qty * (px - q.avgCost) * q.avgFx;
+        dFx += q.qty * q.avgCost * (fxNow - q.avgFx);
+        dCross += q.qty * (px - q.avgCost) * (fxNow - q.avgFx);
+        usCost += q.qty * q.avgCost; usCostFx += q.qty * q.avgCost * q.avgFx;
+      } else { vL = q.qty * px; vK = vL; cK = q.qty * q.avgCost; }
+      // 종목 XIRR: 현금흐름 + 말기 평가액
+      var tkCfs = (cfByTicker[tk] || []).slice();
+      tkCfs.push([asof, vK]);
+      tkCfs.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; });
+      var tkXirr = xirr(tkCfs);
+      holdings.push({
+        ticker: tk, name: (data.names && data.names[tk]) || tk, mkt: q.mkt,
+        qty: q.qty, avgCost: q.avgCost, avgFx: q.avgFx, price: px,
+        valueLocal: vL, valueKrw: vK, costKrw: cK, unrealKrw: vK - cK,
+        retLocal: px / q.avgCost - 1, retKrw: vK / cK - 1, divKrw: divBy[tk] || 0,
+        xirr: tkXirr,
+      });
+      stockKrw += vK;
+    }
+    // 가격 누락은 경고(계산 차단 아님)
+    if (missingPx.length) warnings.push('시세 미입력 ' + missingPx.length + '개 종목: ' + missingPx.join(', ') + ' — GitHub 가격 불러오기 또는 Colab으로 시세를 채우면 평가액·수익률이 활성화됩니다.');
+    // avgBuyFx: 시세 있는 종목만으로 usCost=0이면, 시세 없는 미국 보유분의 avgFx도 포함
+    if (usCost === 0) {
+      holdings.forEach(function (h) {
+        if (h.mkt === 'US' && h.missingPrice && h.avgFx > 0) {
+          usCost += h.qty * h.avgCost;
+          usCostFx += h.qty * h.avgCost * h.avgFx;
+        }
+      });
+    }
+    var avgBuyFx = usCost > 0 ? usCostFx / usCost : 0;
+
+    function flowKrw(fl) { return fl.ccy === 'USD' ? fl.amount * FX.at(fl.date) : fl.amount; }
+    var dep = 0, wd = 0;
+    srcFlows.forEach(function (fl) { if (fl.kind === '입금') dep += flowKrw(fl); else wd += flowKrw(fl); });
+    var buyK = 0, sellK = 0;
+    atx.forEach(function (t) {
+      var f2 = 1;
+      if (t.mkt === 'US') f2 = (t.fxRate && t.fxRate > 0) ? t.fxRate : FX.at(t.date);
+      if (t.side === '매수') buyK += (t.qty * t.price + t.fee) * f2;
+      else sellK += (t.qty * t.price - t.fee) * f2;
+    });
+    var cash = dep - wd - buyK + sellK + divTotal;
+    if (cash < 0) warnings.push('추정 현금이 음수입니다(' + Math.round(cash).toLocaleString() + '원). 입출금 기록 누락 가능성을 확인하세요.');
+    if (missFx > 0) warnings.push('체결환율 공란 ' + missFx + '건은 환율히스토리의 해당일 환율로 보충했습니다.');
+
+    var totalValue = stockKrw + cash;
+    var netInvested = dep - wd;
+    var pnl = totalValue - netInvested;
+
+    var cfs = srcFlows.map(function (fl) {
+      return [fl.date, fl.kind === '입금' ? -flowKrw(fl) : flowKrw(fl)];
+    }).sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; });
+    cfs.push([asof, totalValue]);
+    var rate = xirr(cfs);
+    if (rate === null) warnings.push('XIRR 해를 찾지 못했습니다. 입출금 기록을 확인하세요.');
+
+    holdings.sort(function (a, b) { return b.valueKrw - a.valueKrw; });
+    holdings.forEach(function (h) { h.weight = totalValue > 0 ? h.valueKrw / totalValue : 0; });
+
+    return {
+      errors: errors, warnings: warnings,
+      asof: asof, fxNow: fxNow, avgBuyFx: avgBuyFx,
+      holdings: holdings, stockKrw: stockKrw, cash: cash, totalValue: totalValue,
+      deposits: dep, withdrawals: wd, netInvested: netInvested, pnl: pnl,
+      pnlPctVsDeposits: dep > 0 ? pnl / dep : null,
+      realizedTotalKrw: realizedTotal, realizedByTicker: realizedBy, realizedEvents: realizedEvents,
+      divTotalKrw: divTotal, divByTicker: divBy,
+      decomp: { price: dPrice, fx: dFx, cross: dCross },
+      xirr: rate, spanFrom: cfs.length > 1 ? cfs[0][0] : asof,
+      flowKrwOf: flowKrw, fxLookup: FX, cfByTicker: cfByTicker,
+      account: account, accounts: listAccounts(data),
+      _srcFlows: srcFlows, _srcDivs: srcDivs,
+      hasPartialPrices: missingPx.length > 0, missingPx: missingPx,
+    };
+  }
+
+  /* ---------- 「유형별 집계 (categories: {ticker: 카테고리명}) ---------- */
+  function categoryStats(result, categories) {
+    var cats = {};
+    var UNCAT = "\ubbf8\ubd84\ub958";
+    result.holdings.forEach(function (h) {
+      var cat = (categories && categories[h.ticker]) || UNCAT;
+      var c = cats[cat] || (cats[cat] = {
+        name: cat, count: 0, valueKrw: 0, costKrw: 0, unrealKrw: 0, divKrw: 0,
+        tickers: [], cfs: [], hasAssigned: !!(categories && categories[h.ticker]),
+      });
+      c.count++; c.valueKrw += h.valueKrw; c.costKrw += h.costKrw;
+      c.unrealKrw += h.unrealKrw; c.divKrw += h.divKrw; c.tickers.push(h.ticker);
+      var tkCfs = (result.cfByTicker[h.ticker] || []);
+      for (var i = 0; i < tkCfs.length; i++) c.cfs.push(tkCfs[i].slice());
+      c.cfs.push([result.asof, h.valueKrw]);
+    });
+    var totalValue = result.stockKrw;
+    var arr = Object.keys(cats).map(function (k) {
+      var c = cats[k];
+      c.cfs.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; });
+      c.xirr = xirr(c.cfs);
+      c.retKrw = c.costKrw > 0 ? c.valueKrw / c.costKrw - 1 : null;
+      c.weight = totalValue > 0 ? c.valueKrw / totalValue : 0;
+      return c;
+    });
+    arr.sort(function (a, b) { return b.valueKrw - a.valueKrw; });
+    return { cats: arr, totalValue: totalValue,
+             anyAssigned: arr.some(function (c) { return c.hasAssigned; }) };
+  }
+
+  /* ---------- 손익 기여도 (종목별) ---------- */
+  function contributions(result) {
+    var byTicker = {};
+    result.holdings.forEach(function (h) {
+      byTicker[h.ticker] = { ticker: h.ticker, name: h.name, mkt: h.mkt,
+        unreal: h.unrealKrw, realized: 0, div: h.divKrw };
+    });
+    Object.keys(result.realizedByTicker).forEach(function (tk) {
+      if (!byTicker[tk]) byTicker[tk] = { ticker: tk, name: tk, mkt: "", unreal: 0, realized: 0, div: 0 };
+      byTicker[tk].realized = result.realizedByTicker[tk];
+    });
+    Object.keys(result.divByTicker).forEach(function (tk) {
+      if (!byTicker[tk]) byTicker[tk] = { ticker: tk, name: tk, mkt: "", unreal: 0, realized: 0, div: 0 };
+      if (!result.holdings.some(function (h) { return h.ticker === tk; }))
+        byTicker[tk].div = result.divByTicker[tk];
+    });
+    var arr = Object.keys(byTicker).map(function (tk) {
+      var b = byTicker[tk];
+      b.total = b.unreal + b.realized + b.div;
+      return b;
+    });
+    var totalPnl = arr.reduce(function (s, b) { return s + b.total; }, 0);
+    arr.forEach(function (b) { b.share = totalPnl !== 0 ? b.total / totalPnl : 0; });
+    arr.sort(function (a, b) { return b.total - a.total; });
+    return { items: arr, totalPnl: totalPnl };
+  }
+
+  /* ---------- 리밸런싱 (targets: {유형명: 목표비중 0~1}) ---------- */
+  function rebalance(catResult, targets) {
+    var base = catResult.totalValue;
+    var rows = catResult.cats.map(function (c) {
+      var tgt = targets && targets[c.name] != null ? targets[c.name] : null;
+      var tgtVal = tgt != null ? tgt * base : null;
+      var gap = tgtVal != null ? tgtVal - c.valueKrw : null;
+      return { name: c.name, current: c.valueKrw, currentW: c.weight,
+               targetW: tgt, targetVal: tgtVal, gap: gap };
+    });
+    var sumTarget = rows.reduce(function (s, r) { return s + (r.targetW || 0); }, 0);
+    return { rows: rows, base: base, sumTarget: sumTarget };
+  }
+
+  /* ---------- 화면용 보조 시리즈 ---------- */
+  function monthKey(d) { return d.slice(0, 7); }
+  function monthRange(fromISO, toISO_) {
+    var out = [], y = +fromISO.slice(0, 4), m = +fromISO.slice(5, 7);
+    var ye = +toISO_.slice(0, 4), me = +toISO_.slice(5, 7);
+    while (y < ye || (y === ye && m <= me)) {
+      out.push(y + '-' + pad2(m));
+      m++; if (m > 12) { m = 1; y++; }
+    }
+    return out;
+  }
+  function investedSeries(flows, flowKrwOf, asof) {
+    if (!flows.length) return { labels: [], values: [] };
+    var sorted = flows.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    var labels = monthRange(sorted[0].date, asof);
+    var values = [], cum = 0, idx = 0;
+    labels.forEach(function (mk) {
+      while (idx < sorted.length && monthKey(sorted[idx].date) <= mk) {
+        cum += (sorted[idx].kind === '입금' ? 1 : -1) * flowKrwOf(sorted[idx]);
+        idx++;
+      }
+      values.push(cum);
+    });
+    return { labels: labels, values: values };
+  }
+  function flowBins(flows, flowKrwOf, fromISO, toISO_) {
+    var labels = monthRange(fromISO, toISO_);
+    var dIn = {}, dOut = {};
+    flows.forEach(function (fl) {
+      if (fl.date < fromISO || fl.date > toISO_) return;
+      var mk = monthKey(fl.date);
+      if (fl.kind === '입금') dIn[mk] = (dIn[mk] || 0) + flowKrwOf(fl);
+      else dOut[mk] = (dOut[mk] || 0) + flowKrwOf(fl);
+    });
+    return { labels: labels,
+             inflow: labels.map(function (l) { return dIn[l] || 0; }),
+             outflow: labels.map(function (l) { return -(dOut[l] || 0); }) };
+  }
+  function periodStats(data, result, startISO) {
+    var s = startISO || '';
+    var dep = 0, wd = 0, rz = 0, dv = 0;
+    // 계좌 필터가 반영된 결과의 src를 우선 사용
+    var flows = result._srcFlows || data.flows;
+    var divs = result._srcDivs || data.divs || [];
+    flows.forEach(function (fl) {
+      if (fl.date >= s && fl.date <= result.asof) {
+        if (fl.kind === '입금') dep += result.flowKrwOf(fl); else wd += result.flowKrwOf(fl);
+      }
+    });
+    result.realizedEvents.forEach(function (e) { if (e.date >= s && e.date <= result.asof) rz += e.krw; });
+    divs.forEach(function (d) {
+      if (d.date >= s && d.date <= result.asof) {
+        dv += d.ccy === 'USD' ? d.amount * result.fxLookup.at(d.date) : d.amount;
+      }
+    });
+    return { deposits: dep, withdrawals: wd, net: dep - wd, realized: rz, dividends: dv };
+  }
+
+  return { toNum: toNum, toISO: toISO, days: days, normTicker: normTicker,
+           normalizeWorkbook: normalizeWorkbook, compute: compute, xirr: xirr,
+           investedSeries: investedSeries, flowBins: flowBins, periodStats: periodStats,
+           makeFxLookup: makeFxLookup, adjustSplits: adjustSplits,
+           categoryStats: categoryStats, contributions: contributions, rebalance: rebalance,
+           listAccounts: listAccounts };
+});
+
+</script>
+<script>
+var SAMPLE = {
+ "tx": [
+  {
+   "date": "2021-03-15",
+   "mkt": "KR",
+   "ticker": "005930",
+   "name": "삼성전자",
+   "side": "매수",
+   "qty": 50,
+   "price": 82000,
+   "fee": 540,
+   "fxRate": null,
+   "account": "본인"
+  },
+  {
+   "date": "2021-03-15",
+   "mkt": "US",
+   "ticker": "AAPL",
+   "name": "애플",
+   "side": "매수",
+   "qty": 10,
+   "price": 121.5,
+   "fee": 0.95,
+   "fxRate": 1131.2,
+   "account": "딸"
+  },
+  {
+   "date": "2021-09-10",
+   "mkt": "KR",
+   "ticker": "000660",
+   "name": "SK하이닉스",
+   "side": "매수",
+   "qty": 30,
+   "price": 104500,
+   "fee": 410,
+   "fxRate": null,
+   "account": "본인"
+  },
+  {
+   "date": "2022-03-21",
+   "mkt": "US",
+   "ticker": "AAPL",
+   "name": "애플",
+   "side": "매수",
+   "qty": 8,
+   "price": 165.2,
+   "fee": 0.9,
+   "fxRate": null,
+   "account": "딸"
+  },
+  {
+   "date": "2022-10-14",
+   "mkt": "KR",
+   "ticker": "005930",
+   "name": "삼성전자",
+   "side": "매수",
+   "qty": 30,
+   "price": 55300,
+   "fee": 220,
+   "fxRate": null,
+   "account": "본인"
+  },
+  {
+   "date": "2022-11-08",
+   "mkt": "US",
+   "ticker": "TSLA",
+   "name": "테슬라",
+   "side": "매수",
+   "qty": 12,
+   "price": 191.3,
+   "fee": 1.0,
+   "fxRate": 1385.0,
+   "account": "본인"
+  },
+  {
+   "date": "2023-08-10",
+   "mkt": "US",
+   "ticker": "AAPL",
+   "name": "애플",
+   "side": "매도",
+   "qty": 4,
+   "price": 178.2,
+   "fee": 0.71,
+   "fxRate": 1316.5,
+   "account": "딸"
+  },
+  {
+   "date": "2024-01-22",
+   "mkt": "US",
+   "ticker": "NVDA",
+   "name": "엔비디아",
+   "side": "매수",
+   "qty": 20,
+   "price": 595.0,
+   "fee": 1.1,
+   "fxRate": 1338.0,
+   "account": "본인"
+  },
+  {
+   "date": "2024-09-05",
+   "mkt": "US",
+   "ticker": "NVDA",
+   "name": "엔비디아",
+   "side": "매수",
+   "qty": 40,
+   "price": 106.4,
+   "fee": 0.85,
+   "fxRate": 1339.8,
+   "account": "본인"
+  },
+  {
+   "date": "2025-02-18",
+   "mkt": "KR",
+   "ticker": "000660",
+   "name": "SK하이닉스",
+   "side": "매수",
+   "qty": 20,
+   "price": 198000,
+   "fee": 520,
+   "fxRate": null,
+   "account": "본인"
+  }
+ ],
+ "flows": [
+  {
+   "date": "2021-01-04",
+   "kind": "입금",
+   "amount": 30000000,
+   "ccy": "KRW",
+   "memo": "초기 납입",
+   "account": "본인"
+  },
+  {
+   "date": "2022-06-02",
+   "kind": "입금",
+   "amount": 10000000,
+   "ccy": "KRW",
+   "memo": "",
+   "account": "본인"
+  },
+  {
+   "date": "2023-11-20",
+   "kind": "출금",
+   "amount": 5000000,
+   "ccy": "KRW",
+   "memo": "생활비 인출",
+   "account": "본인"
+  },
+  {
+   "date": "2024-05-13",
+   "kind": "입금",
+   "amount": 5000,
+   "ccy": "USD",
+   "memo": "딸 계좌 달러 입금",
+   "account": "딸"
+  }
+ ],
+ "divs": [
+  {
+   "date": "2022-05-17",
+   "ticker": "005930",
+   "amount": 14440,
+   "ccy": "KRW",
+   "account": "본인"
+  },
+  {
+   "date": "2022-08-15",
+   "ticker": "AAPL",
+   "amount": 1.84,
+   "ccy": "USD",
+   "account": "딸"
+  },
+  {
+   "date": "2023-05-17",
+   "ticker": "005930",
+   "amount": 28880,
+   "ccy": "KRW",
+   "account": "본인"
+  },
+  {
+   "date": "2023-05-18",
+   "ticker": "AAPL",
+   "amount": 4.32,
+   "ccy": "USD",
+   "account": "딸"
+  },
+  {
+   "date": "2024-05-16",
+   "ticker": "AAPL",
+   "amount": 3.36,
+   "ccy": "USD",
+   "account": "딸"
+  },
+  {
+   "date": "2024-05-20",
+   "ticker": "005930",
+   "amount": 28880,
+   "ccy": "KRW",
+   "account": "본인"
+  },
+  {
+   "date": "2025-05-15",
+   "ticker": "AAPL",
+   "amount": 3.5,
+   "ccy": "USD",
+   "account": "딸"
+  },
+  {
+   "date": "2025-05-19",
+   "ticker": "005930",
+   "amount": 57760,
+   "ccy": "KRW",
+   "account": "본인"
+  },
+  {
+   "date": "2026-02-12",
+   "ticker": "AAPL",
+   "amount": 3.64,
+   "ccy": "USD",
+   "account": "딸"
+  },
+  {
+   "date": "2026-04-17",
+   "ticker": "005930",
+   "amount": 28880,
+   "ccy": "KRW",
+   "account": "본인"
+  }
+ ],
+ "splits": [
+  {
+   "date": "2024-06-10",
+   "ticker": "NVDA",
+   "ratio": 10
+  }
+ ],
+ "snapshot": {
+  "asof": "2026-06-12",
+  "time": "15:30",
+  "prices": [
+   {
+    "ticker": "AAPL",
+    "mkt": "US",
+    "price": 245.3,
+    "ccy": "USD"
+   },
+   {
+    "ticker": "TSLA",
+    "mkt": "US",
+    "price": 171.9,
+    "ccy": "USD"
+   },
+   {
+    "ticker": "NVDA",
+    "mkt": "US",
+    "price": 142.6,
+    "ccy": "USD"
+   },
+   {
+    "ticker": "005930",
+    "mkt": "KR",
+    "price": 79800,
+    "ccy": "KRW"
+   },
+   {
+    "ticker": "000660",
+    "mkt": "KR",
+    "price": 268500,
+    "ccy": "KRW"
+   }
+  ]
+ },
+ "fx": [
+  {
+   "date": "2021-01-01",
+   "rate": 1085.0
+  },
+  {
+   "date": "2021-02-01",
+   "rate": 1110.0
+  },
+  {
+   "date": "2021-03-01",
+   "rate": 1130.0
+  },
+  {
+   "date": "2021-04-01",
+   "rate": 1118.0
+  },
+  {
+   "date": "2021-05-01",
+   "rate": 1112.0
+  },
+  {
+   "date": "2021-06-01",
+   "rate": 1126.0
+  },
+  {
+   "date": "2021-07-01",
+   "rate": 1142.0
+  },
+  {
+   "date": "2021-08-01",
+   "rate": 1158.0
+  },
+  {
+   "date": "2021-09-01",
+   "rate": 1170.0
+  },
+  {
+   "date": "2021-10-01",
+   "rate": 1178.0
+  },
+  {
+   "date": "2021-11-01",
+   "rate": 1182.0
+  },
+  {
+   "date": "2021-12-01",
+   "rate": 1188.0
+  },
+  {
+   "date": "2022-01-01",
+   "rate": 1198.0
+  },
+  {
+   "date": "2022-02-01",
+   "rate": 1202.0
+  },
+  {
+   "date": "2022-03-01",
+   "rate": 1214.0
+  },
+  {
+   "date": "2022-04-01",
+   "rate": 1232.0
+  },
+  {
+   "date": "2022-05-01",
+   "rate": 1256.0
+  },
+  {
+   "date": "2022-06-01",
+   "rate": 1278.0
+  },
+  {
+   "date": "2022-07-01",
+   "rate": 1302.0
+  },
+  {
+   "date": "2022-08-01",
+   "rate": 1322.0
+  },
+  {
+   "date": "2022-09-01",
+   "rate": 1388.0
+  },
+  {
+   "date": "2022-10-01",
+   "rate": 1424.0
+  },
+  {
+   "date": "2022-11-01",
+   "rate": 1398.0
+  },
+  {
+   "date": "2022-12-01",
+   "rate": 1306.0
+  },
+  {
+   "date": "2023-01-01",
+   "rate": 1242.0
+  },
+  {
+   "date": "2023-02-01",
+   "rate": 1268.0
+  },
+  {
+   "date": "2023-03-01",
+   "rate": 1296.0
+  },
+  {
+   "date": "2023-04-01",
+   "rate": 1322.0
+  },
+  {
+   "date": "2023-05-01",
+   "rate": 1318.0
+  },
+  {
+   "date": "2023-06-01",
+   "rate": 1296.0
+  },
+  {
+   "date": "2023-07-01",
+   "rate": 1272.0
+  },
+  {
+   "date": "2023-08-01",
+   "rate": 1308.0
+  },
+  {
+   "date": "2023-09-01",
+   "rate": 1326.0
+  },
+  {
+   "date": "2023-10-01",
+   "rate": 1342.0
+  },
+  {
+   "date": "2023-11-01",
+   "rate": 1316.0
+  },
+  {
+   "date": "2023-12-01",
+   "rate": 1296.0
+  },
+  {
+   "date": "2024-01-01",
+   "rate": 1322.0
+  },
+  {
+   "date": "2024-02-01",
+   "rate": 1336.0
+  },
+  {
+   "date": "2024-03-01",
+   "rate": 1342.0
+  },
+  {
+   "date": "2024-04-01",
+   "rate": 1356.0
+  },
+  {
+   "date": "2024-05-01",
+   "rate": 1366.0
+  },
+  {
+   "date": "2024-06-01",
+   "rate": 1378.0
+  },
+  {
+   "date": "2024-07-01",
+   "rate": 1384.0
+  },
+  {
+   "date": "2024-08-01",
+   "rate": 1352.0
+  },
+  {
+   "date": "2024-09-01",
+   "rate": 1338.0
+  },
+  {
+   "date": "2024-10-01",
+   "rate": 1362.0
+  },
+  {
+   "date": "2024-11-01",
+   "rate": 1392.0
+  },
+  {
+   "date": "2024-12-01",
+   "rate": 1448.0
+  },
+  {
+   "date": "2025-01-01",
+   "rate": 1462.0
+  },
+  {
+   "date": "2025-02-01",
+   "rate": 1438.0
+  },
+  {
+   "date": "2025-03-01",
+   "rate": 1414.0
+  },
+  {
+   "date": "2025-04-01",
+   "rate": 1398.0
+  },
+  {
+   "date": "2025-05-01",
+   "rate": 1376.0
+  },
+  {
+   "date": "2025-06-01",
+   "rate": 1358.0
+  },
+  {
+   "date": "2025-07-01",
+   "rate": 1346.0
+  },
+  {
+   "date": "2025-08-01",
+   "rate": 1352.0
+  },
+  {
+   "date": "2025-09-01",
+   "rate": 1366.0
+  },
+  {
+   "date": "2025-10-01",
+   "rate": 1378.0
+  },
+  {
+   "date": "2025-11-01",
+   "rate": 1386.0
+  },
+  {
+   "date": "2025-12-01",
+   "rate": 1394.0
+  },
+  {
+   "date": "2026-01-01",
+   "rate": 1402.0
+  },
+  {
+   "date": "2026-02-01",
+   "rate": 1390.0
+  },
+  {
+   "date": "2026-03-01",
+   "rate": 1378.0
+  },
+  {
+   "date": "2026-04-01",
+   "rate": 1368.0
+  },
+  {
+   "date": "2026-05-01",
+   "rate": 1372.0
+  },
+  {
+   "date": "2026-06-01",
+   "rate": 1374.0
+  },
+  {
+   "date": "2026-06-12",
+   "rate": 1378.5
+  }
+ ],
+ "names": {
+  "005930": "삼성전자",
+  "AAPL": "애플",
+  "000660": "SK하이닉스",
+  "TSLA": "테슬라",
+  "NVDA": "엔비디아"
+ }
+};
+</script>
+<script>
+(function(){
+'use strict';
+var E = window.Engine;
+
+/* ── localStorage ── */
+var LS = { cat:'amd_cat', tx:'amd_tx', fl:'amd_fl', tgt:'amd_tgt', gh:'amd_gh_url', zoom:'amd_zoom' };
+function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+
+/* ── 상태 ── */
+var state = {
+  base: null,
+  manual: { tx: lsGet(LS.tx)||[], flows: lsGet(LS.fl)||[] },
+  categories: lsGet(LS.cat)||{},
+  targets: lsGet(LS.tgt)||{},
+  result: null, view:'ticker', inclCash:true, period:'all',
+  account: null,  // null = 전체 합산
+  charts:{}, extraWarnings:[],
+  editingTxIdx:null, editingFlIdx:null
+};
+var bootWarnings = [];
+
+/* ── 카테고리 팔레트 (색각 안전: 코랄·블루 명도축 교차, 등장순 안정배정) ──
+   적-녹 색각에서도 명도차로 구분되도록 코랄 진/블루 진 → 코랄 연/블루 연 순.
+   미분류는 항상 그레이 고정. 카테고리는 처음 등장한 순서대로 색을 받아
+   세션이 달라도 같은 집합이면 같은 색이 유지됨. */
+var CAT_PAL = ['#d85a30','#185fa5','#993c1d','#5a9bd8','#f0997b','#0d3b66','#c97b4a','#9fc3e8'];
+var CAT_GRAY = '#b4b2a9';
+var catColorMap = {};
+function rebuildCatColors(){
+  catColorMap = {};
+  var i = 0;
+  catList().forEach(function(name){ catColorMap[name] = CAT_PAL[i++ % CAT_PAL.length]; });
+}
+function catColor(name){
+  if(!name || name==='미분류') return CAT_GRAY;
+  if(!(name in catColorMap)){ rebuildCatColors(); }
+  return catColorMap[name] || CAT_GRAY;
+}
+function catList(){ return Object.values(state.categories).filter(Boolean)
+  .filter(function(v,i,a){ return a.indexOf(v)===i; }).sort(); }
+function updateCatDatalist(){
+  var dl=document.getElementById('catlist');
+  if(!dl) return;
+  dl.innerHTML=catList().map(function(c){ return '<option value="'+c.replace(/"/g,'&quot;')+'">'; }).join('');
+}
+function updateAcctDatalist(){
+  var dl=document.getElementById('acctlist');
+  if(!dl) return;
+  var accts=E.listAccounts(currentData());
+  dl.innerHTML=accts.map(function(a){ return '<option value="'+a.replace(/"/g,'&quot;')+'">'; }).join('');
+}
+function saveCat(ticker, raw){
+  var cat=raw.trim();
+  if(cat) state.categories[ticker]=cat; else delete state.categories[ticker];
+  lsSet(LS.cat, state.categories);
+  rebuildCatColors();
+  updateCatDatalist();
+  if(state.result){ renderTable(); renderCategoryCard(); renderRebalance(); renderDonut(); }
+}
+
+/* ── 데이터 병합 ── */
+function currentData(){
+  var b = state.base || { tx:[], flows:[], divs:[], splits:[],
+    snapshot:{asof:null,prices:[]}, fx:[], names:{} };
+  var names = Object.assign({}, b.names);
+  state.manual.tx.forEach(function(t){ if(t.name&&t.ticker) names[t.ticker]=t.name; });
+  return {
+    tx: b.tx.concat(state.manual.tx).sort(function(a,x){ return a.date<x.date?-1:1; }),
+    flows: b.flows.concat(state.manual.flows).sort(function(a,x){ return a.date<x.date?-1:1; }),
+    divs: b.divs, splits: b.splits, snapshot: b.snapshot, fx: b.fx, names: names
+  };
+}
+
+/* ── 포맷터 ── */
+function fmtKrw(v){
+  var s=v<0?'-':''; var a=Math.abs(v);
+  if(a>=1e8){ var e=a/1e8; return s+(e>=100?Math.round(e).toLocaleString():e.toFixed(2).replace(/\.?0+$/,''))+'억'; }
+  if(a>=1e4){ return s+Math.round(a/1e4).toLocaleString()+'만'; }
+  return s+Math.round(a).toLocaleString()+'원';
+}
+function fmtKrwS(v){ return (v>0?'+':'')+fmtKrw(v); }
+function fmtPct(v,sign){ if(v===null||v===undefined||!isFinite(v)) return '—';
+  return (sign&&v>0?'+':'')+(v*100).toFixed(1)+'%'; }
+function fmtLocal(v,mkt){ return mkt==='US'?'$'+v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):Math.round(v).toLocaleString()+'원'; }
+function fmtFx(v){ return v.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1}); }
+function cls(v){ return v>0?'up':(v<0?'dn':''); }
+function el(id){ return document.getElementById(id); }
+function shiftYears(iso,n){ var y=+iso.slice(0,4)+n, md=iso.slice(5);
+  if(md==='02-29'){ var lp=(y%4===0&&y%100!==0)||y%400===0; if(!lp) md='02-28'; }
+  return y+'-'+md; }
+
+/* ── 차트 ── */
+var C={ coral:'#d85a30',coralD:'#993c1d',coralL:'#f0997b',coralLL:'#f5c4b3',
+  blue:'#185fa5',blueM:'#378add',blueL:'#85b7eb',blueLL:'#b5d4f4',
+  gray:'#b4b2a9',grayL:'#d3d1c7',mut:'#6b7280',grid:'#ecece6' };
+var usShades=[C.coral,'#e97b52',C.coralL,C.coralLL];
+var krShades=[C.blue,'#3e84c4',C.blueL,C.blueLL];
+var hasChart=typeof Chart!=='undefined';
+if(hasChart){
+  Chart.defaults.font.family=getComputedStyle(document.body).fontFamily;
+  Chart.defaults.font.size=13; Chart.defaults.color=C.mut;
+}
+function makeChart(id,cfg){
+  if(!hasChart) return;
+  if(state.charts[id]) state.charts[id].destroy();
+  state.charts[id]=new Chart(el(id).getContext('2d'),cfg);
+}
+
+/* ── 메시지/상태 ── */
+function showMessages(errors,warnings){
+  var box=el('messages'); box.innerHTML='';
+  (errors||[]).forEach(function(m){ var d=document.createElement('div'); d.className='msg err'; d.textContent='오류 · '+m; box.appendChild(d); });
+  (warnings||[]).forEach(function(m){ var d=document.createElement('div'); d.className='msg warn'; d.textContent='참고 · '+m; box.appendChild(d); });
+}
+function setStatus(t){ el('status').textContent=t; }
+
+/* ── 렌더 ── */
+function renderAccountBar(){
+  var d=currentData();
+  var accts=E.listAccounts(d);
+  var bar=el('acctBar');
+  // 계좌가 '기본' 하나뿐이면 셀렉터 숨김
+  if(accts.length<=1 && accts[0]==='기본'){ bar.style.display='none'; state.account=null; return; }
+  bar.style.display='flex';
+  // 선택값 유효성 검사
+  if(state.account && accts.indexOf(state.account)<0) state.account=null;
+  var html='<span class="acct-chip'+(state.account===null?' on':'')+'" data-acct="">전체 합산</span>';
+  accts.forEach(function(a){
+    html+='<span class="acct-chip'+(state.account===a?' on':'')+'" data-acct="'+a.replace(/"/g,'&quot;')+'">'+a+'</span>';
+  });
+  el('acctChips').innerHTML=html;
+  el('acctChips').querySelectorAll('.acct-chip').forEach(function(chip){
+    chip.addEventListener('click',function(){
+      var a=chip.dataset.acct;
+      state.account = a==='' ? null : a;
+      render();
+    });
+  });
+}
+function isEmptyData(){
+  var d=currentData();
+  return (!d.tx || d.tx.length===0) && (!d.flows || d.flows.length===0);
+}
+function showEmptyState(on){
+  var es=el('emptyState'), mc=el('mainContent');
+  if(es) es.style.display = on ? 'block' : 'none';
+  if(mc) mc.style.display = on ? 'none' : '';
+  // 빈 상태에선 계좌 바도 숨김
+  if(on){ var ab=el('acctBar'); if(ab) ab.style.display='none'; }
+}
+function render(){
+  // 데이터가 전혀 없으면 빈 상태 안내
+  if(isEmptyData()){
+    state.result=null;
+    showMessages([], bootWarnings.concat(state.extraWarnings));
+    showEmptyState(true);
+    el('chipAsof').textContent='기준일 —';
+    el('chipFx').textContent='USD/KRW —';
+    // 이전 렌더 잔여물 제거
+    var tb=el('holdTable'); if(tb){ var b=tb.querySelector('tbody'); if(b) b.innerHTML=''; }
+    var cc=el('catCard'); if(cc) cc.style.display='none';
+    updateCatDatalist(); updateAcctDatalist();
+    return;
+  }
+  showEmptyState(false);
+  var d=currentData();
+  renderAccountBar();
+  var r=E.compute(d, state.account?{account:state.account}:undefined);
+  state.result=r;
+  r.holdings.forEach(function(h){ h.category=state.categories[h.ticker]||''; });
+  showMessages(r.errors, bootWarnings.concat(state.extraWarnings, r.warnings));
+  if(r.errors.length){ setStatus(el('status').textContent+' · 오류로 계산이 중단되었습니다.'); return; }
+
+  el('chipAsof').textContent='기준일 '+r.asof;
+  el('chipFx').textContent='USD/KRW '+fmtFx(r.fxNow);
+  el('sumSub').textContent='원화 환산 기준'+(state.account?' · '+state.account+' 계좌':' · 전체 합산');
+  el('kTotal').textContent=fmtKrw(r.totalValue);
+  el('kTotalSub').textContent='주식 '+fmtKrw(r.stockKrw)+' · 현금(추정) '+fmtKrw(r.cash);
+  el('kInvested').textContent=fmtKrw(r.netInvested);
+  el('kInvestedSub').textContent='입금 '+fmtKrw(r.deposits)+' − 출금 '+fmtKrw(r.withdrawals);
+  el('kPnl').textContent=fmtKrwS(r.pnl); el('kPnl').className='kv '+cls(r.pnl);
+  el('kPnlSub').textContent='입금총액 대비 '+fmtPct(r.pnlPctVsDeposits,true)+' · 시점 미반영 단순값';
+  if(r.hasPartialPrices){
+    el('kTotal').textContent='—'; el('kTotalSub').textContent='시세 연결 후 활성화';
+    el('kPnl').textContent='—'; el('kPnl').className='kv'; el('kPnlSub').textContent='시세 연결 후 활성화';
+    el('kXirr').textContent='—'; el('kXirr').className='kv';
+    el('kXirrSub').textContent='시세 연결 후 활성화';
+    el('kFxEff').textContent='—'; el('kFxEff').className='kv'; el('kFxEffSub').textContent='';
+  } else {
+    el('kXirr').textContent=r.xirr===null?'—':fmtPct(r.xirr,true);
+    el('kXirr').className='kv '+(r.xirr===null?'':cls(r.xirr));
+    el('kXirrSub').textContent='전체 기간 '+r.spanFrom+' ~ '+r.asof;
+  }
+  el('kFxEff').textContent=fmtKrwS(r.decomp.fx); el('kFxEff').className='kv '+cls(r.decomp.fx);
+  el('kFxEffSub').textContent='평균매수 '+fmtFx(r.avgBuyFx)+' → 현재 '+fmtFx(r.fxNow)+' · 교차항 별도';
+
+  rebuildCatColors();
+  [renderDonut, renderTrend, renderTable, renderCategoryCard, renderRebalance,
+   renderFx, renderDecomp, renderPeriod].forEach(function(fn){
+    try{ fn(); } catch(e){ console.error('[render]', fn.name, e); }
+  });
+  updateCatDatalist();
+  updateAcctDatalist();
+}
+
+/* ── 도넛 ── */
+function donutSlices(){
+  var r=state.result, sl=[];
+  if(state.view==='ticker'){
+    var iU=0,iK=0;
+    r.holdings.slice(0,6).forEach(function(h){
+      var c=h.mkt==='US'?usShades[Math.min(iU++,3)]:krShades[Math.min(iK++,3)];
+      sl.push({label:h.name+(h.mkt==='US'?' '+h.ticker:''),v:h.valueKrw,c:c});
+    });
+    var rest=r.holdings.slice(6).reduce(function(s,h){ return s+h.valueKrw; },0);
+    if(rest>0) sl.push({label:'기타 '+(r.holdings.length-6)+'종목',v:rest,c:C.gray});
+  } else if(state.view==='mkt'){
+    var us=0,kr=0; r.holdings.forEach(function(h){ if(h.mkt==='US')us+=h.valueKrw; else kr+=h.valueKrw; });
+    if(us>0) sl.push({label:'미국 주식',v:us,c:C.coral});
+    if(kr>0) sl.push({label:'한국 주식',v:kr,c:C.blue});
+  } else if(state.view==='ccy'){
+    var usd=0,krw=0; r.holdings.forEach(function(h){ if(h.mkt==='US')usd+=h.valueKrw; else krw+=h.valueKrw; });
+    if(usd>0) sl.push({label:'USD 자산',v:usd,c:C.coral});
+    if(krw>0) sl.push({label:'KRW 자산',v:krw,c:C.blue});
+  } else { /* cat */
+    var cm={};
+    r.holdings.forEach(function(h){
+      var cat=state.categories[h.ticker]||'미분류';
+      cm[cat]=(cm[cat]||0)+h.valueKrw;
+    });
+    Object.keys(cm).sort(function(a,b){ return cm[b]-cm[a]; }).forEach(function(cat){
+      sl.push({label:cat, v:cm[cat], c:catColor(cat==='미분류'?null:cat)});
+    });
+  }
+  if(state.inclCash && r.cash>0) sl.push({label:'현금(추정)',v:r.cash,c:C.grayL});
+  return sl;
+}
+function renderDonut(){
+  var sl=donutSlices();
+  var tot=sl.reduce(function(s,x){ return s+x.v; },0)||1;
+  var lg=el('donutLegend'); lg.innerHTML='';
+  sl.forEach(function(x){
+    var li=document.createElement('li');
+    li.innerHTML='<span class="lg-dot" style="background:'+x.c+'"></span><span>'+x.label+
+      '</span><span class="pct">'+(x.v/tot*100).toFixed(1)+'%</span>';
+    lg.appendChild(li);
+  });
+  makeChart('cDonut',{type:'doughnut',
+    data:{labels:sl.map(function(x){ return x.label; }),
+      datasets:[{data:sl.map(function(x){ return x.v; }),
+        backgroundColor:sl.map(function(x){ return x.c; }),borderColor:'#fff',borderWidth:2}]},
+    options:{cutout:'58%',plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:function(c){ return ' '+c.label+': '+fmtKrw(c.parsed)+' ('+(c.parsed/tot*100).toFixed(1)+'%)'; }}}},
+      maintainAspectRatio:false}});
+}
+
+/* ── 유형별 성과 카드 (엔진 categoryStats 기반) ── */
+var catMetric = 'xirr';  // 'xirr' | 'ret'
+function renderCategoryCard(){
+  var r=state.result; if(!r) return;
+  var cs=E.categoryStats(r, state.categories);
+  el('catCard').style.display = cs.anyAssigned ? 'block' : 'none';
+  if(!cs.anyAssigned) return;
+  var arr=cs.cats;
+  var tbody=el('catTable').querySelector('tbody');
+  tbody.innerHTML=arr.map(function(c){
+    var dot='<span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:'+
+      catColor(c.name)+';margin-right:8px;vertical-align:middle"></span>';
+    var xtxt=c.xirr==null?'—':fmtPct(c.xirr,true);
+    return '<tr><td class="left">'+dot+c.name+'</td><td>'+c.count+'</td><td>'+fmtKrw(c.valueKrw)+
+      '</td><td>'+fmtPct(c.weight)+'</td>'+
+      '<td class="'+cls(c.retKrw)+'">'+fmtPct(c.retKrw,true)+'</td>'+
+      '<td class="'+(c.xirr==null?'':cls(c.xirr))+'">'+xtxt+'</td></tr>';
+  }).join('');
+  // 막대: 선택 지표 (연환산 또는 누적), 색은 부호(코랄/블루)
+  var vals=arr.map(function(c){
+    var v = catMetric==='xirr' ? c.xirr : c.retKrw;
+    return v==null ? 0 : v*100;
+  });
+  makeChart('cCat',{type:'bar',
+    data:{labels:arr.map(function(c){ return c.name; }),
+      datasets:[{data:vals,
+        backgroundColor:vals.map(function(v){ return v>=0?C.coral:C.blue; }),
+        borderRadius:5,barThickness:26}]},
+    options:{indexAxis:'y',maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){
+        var lab=catMetric==='xirr'?'연환산 ':'누적 ';
+        return ' '+lab+fmtPct(c.parsed.x/100,true);
+      }}}},
+      scales:{x:{ticks:{callback:function(v){ return v+'%'; }},grid:{color:C.grid}},y:{grid:{display:false}}}}});
+}
+
+/* ── 리밸런싱 ── */
+function renderRebalance(){
+  var r=state.result; if(!r) return;
+  var cs=E.categoryStats(r, state.categories);
+  if(!cs.anyAssigned){ return; }
+  var rb=E.rebalance(cs, state.targets);
+  var tbody=el('rebalTable').querySelector('tbody');
+  tbody.innerHTML=rb.rows.map(function(row){
+    var dot='<span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:'+
+      catColor(row.name)+';margin-right:8px;vertical-align:middle"></span>';
+    var tw = row.targetW!=null ? (row.targetW*100).toFixed(0) : '';
+    var gapHtml='—';
+    if(row.gap!=null){
+      var act = row.gap>0 ? '<span class="buy">+'+fmtKrw(row.gap)+' 매수</span>'
+                          : (row.gap<0 ? '<span class="sell">'+fmtKrw(row.gap)+' 매도</span>' : '균형');
+      gapHtml=act;
+    }
+    return '<tr><td class="left">'+dot+row.name+'</td>'+
+      '<td>'+fmtPct(row.currentW)+'</td>'+
+      '<td><input class="tw-inp" type="number" min="0" max="100" step="1" data-cat="'+
+        row.name.replace(/"/g,'&quot;')+'" value="'+tw+'" placeholder="—">%</td>'+
+      '<td>'+fmtKrw(row.current)+'</td>'+
+      '<td>'+(row.targetVal!=null?fmtKrw(row.targetVal):'—')+'</td>'+
+      '<td>'+gapHtml+'</td></tr>';
+  }).join('');
+  // 합계행
+  var sumPct=(rb.sumTarget*100);
+  var tfoot=el('rebalTable').querySelector('tfoot');
+  tfoot.innerHTML='<tr><td class="left">목표 합계</td><td></td><td>'+
+    (rb.sumTarget>0?sumPct.toFixed(0)+'%':'—')+'</td><td colspan="3"></td></tr>';
+  // 경고
+  var note=el('rebalNote');
+  if(rb.sumTarget>0 && Math.abs(rb.sumTarget-1)>0.005){
+    note.className='rebal-note warn';
+    note.textContent='목표 비중 합계가 '+sumPct.toFixed(0)+'%입니다. 100%가 되도록 조정하면 조정 금액이 정확해집니다('+
+      (rb.sumTarget>1?'초과':'미달')+').';
+  } else {
+    note.className='rebal-note';
+    note.textContent='';
+  }
+  // 입력 핸들러 연결
+  tbody.querySelectorAll('.tw-inp').forEach(function(inp){
+    inp.addEventListener('change',function(){
+      var cat=inp.dataset.cat, v=parseFloat(inp.value);
+      if(isNaN(v)||v<0){ delete state.targets[cat]; }
+      else { state.targets[cat]=v/100; }
+      lsSet(LS.tgt, state.targets);
+      renderRebalance();
+    });
+  });
+}
+/* ── 자산 추이 ── */
+function renderTrend(){
+  var r=state.result, d=currentData();
+  var s=E.investedSeries(r._srcFlows||d.flows, r.flowKrwOf, r.asof);
+  var pt=s.values.map(function(){ return null; }); pt[pt.length-1]=r.totalValue;
+  makeChart('cTrend',{type:'line',
+    data:{labels:s.labels,datasets:[
+      {label:'누적 순투입원금',data:s.values,stepped:true,borderColor:'#888780',borderDash:[6,5],borderWidth:2,pointRadius:0,fill:false},
+      {label:'현재 평가액',data:pt,borderColor:C.coral,backgroundColor:C.coral,pointRadius:7,pointHoverRadius:8,showLine:false}
+    ]},
+    options:{maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},
+      plugins:{legend:{position:'bottom',labels:{boxWidth:14,boxHeight:14}},
+        tooltip:{callbacks:{label:function(c){ return ' '+c.dataset.label+': '+fmtKrw(c.parsed.y); }}}},
+      scales:{x:{ticks:{maxTicksLimit:8,maxRotation:0},grid:{display:false}},
+        y:{ticks:{callback:function(v){ return fmtKrw(v); }},grid:{color:C.grid}}}}});
+}
+
+/* ── 종목 테이블 ── */
+var sortKey='valueKrw', sortDesc=true;
+function renderTable(){
+  var r=state.result;
+  var rows=r.holdings.slice().sort(function(a,b){
+    var x=a[sortKey],y=b[sortKey];
+    if(typeof x==='string') return sortDesc?(y>x?1:-1):(x>y?1:-1);
+    return sortDesc?y-x:x-y;
+  });
+  var d=currentData();
+  var tb=el('holdTable').querySelector('tbody'); tb.innerHTML='';
+  rows.forEach(function(h){
+    var cat=state.categories[h.ticker]||'';
+    var catHtml=cat
+      ? '<span class="cat-tag" style="background:'+catColor(cat)+';color:#fff" data-ticker="'+h.ticker+'">'+cat+'</span>'
+      : '<span class="cat-tag cat-add" data-ticker="'+h.ticker+'">+ 추가</span>';
+    catHtml+='<input class="cat-inp" type="text" list="catlist" data-ticker="'+h.ticker+'" value="'+cat+'" style="display:none">';
+    var noPrice=h.missingPrice===true;
+    var tr=document.createElement('tr');
+    if(noPrice) tr.style.opacity='0.7';
+    tr.innerHTML=
+      '<td><div class="tname">'+h.name+'</div>'+
+        '<div class="tsub">'+h.ticker+(noPrice?' <span class="no-px-tag">시세 없음</span>':'')+'</div></td>'+
+      '<td><span class="mk '+h.mkt+'">'+(h.mkt==='US'?'미국':'한국')+'</span></td>'+
+      '<td>'+h.qty.toLocaleString()+'</td>'+
+      '<td>'+fmtLocal(h.avgCost,h.mkt)+(h.mkt==='US'?'<div class="tsub">@'+fmtFx(h.avgFx)+'</div>':'')+'</td>'+
+      '<td>'+(noPrice?'—':fmtLocal(h.price,h.mkt))+'</td>'+
+      '<td>'+(noPrice?'—':fmtKrw(h.valueKrw))+'</td>'+
+      '<td>'+(noPrice?'—':'<span class="'+cls(h.unrealKrw)+'">'+fmtKrwS(h.unrealKrw)+'</span>')+'</td>'+
+      '<td>'+(noPrice?'—':'<span class="'+cls(h.retLocal)+'">'+fmtPct(h.retLocal,true)+'</span>')+'</td>'+
+      '<td>'+(noPrice?'—':'<span class="'+cls(h.retKrw)+'">'+fmtPct(h.retKrw,true)+'</span>')+'</td>'+
+      '<td>'+(h.divKrw>0?fmtKrw(h.divKrw):'—')+'</td>'+
+      '<td>'+(noPrice?'—':fmtPct(h.weight))+'</td>'+
+      '<td class="cat-cell">'+catHtml+'</td>';
+    tb.appendChild(tr);
+  });
+  var chips=Object.keys(r.realizedByTicker).map(function(tk){
+    var v=r.realizedByTicker[tk];
+    return (d.names[tk]||tk)+' <b class="'+cls(v)+'">'+fmtKrwS(v)+'</b>';
+  }).join(' · ');
+  el('realizedLine').innerHTML=
+    '매도 실현손익 누계 <b class="'+cls(r.realizedTotalKrw)+'">'+fmtKrwS(r.realizedTotalKrw)+'</b>'+
+    (chips?' ( '+chips+' )':'')+
+    ' &nbsp;·&nbsp; 배당 수령 누계 <b>'+fmtKrw(r.divTotalKrw)+'</b>'+
+    ' &nbsp;·&nbsp; 비중은 현금 포함 총 평가액 기준';
+}
+
+/* ── 환율 / 분해 ── */
+function renderFx(){
+  var r=state.result;
+  if(!r||!r.fxLookup){ return; }
+  var series=r.fxLookup.series||[];
+  // 데이터 없음: 안내 메시지만 표시
+  if(!series.length){
+    el('fxCap').textContent='환율 데이터 없음 — GitHub 가격 불러오기 또는 Colab으로 채울 수 있습니다.';
+    var cv=el('cFx'); if(cv){var ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);}
+    return;
+  }
+  var step=Math.max(1,Math.ceil(series.length/420));
+  var pts=series.filter(function(_,i){ return i%step===0||i===series.length-1; });
+  el('fxCap').textContent='현재 '+fmtFx(r.fxNow)+' · 보유분 평균 매수환율 '+
+    (r.avgBuyFx>0?fmtFx(r.avgBuyFx):'—')+(r.avgBuyFx>0?' ('+fmtPct(r.fxNow/r.avgBuyFx-1,true)+')':'');
+  var ds=[{label:'USD/KRW',data:pts.map(function(p){ return p.rate; }),borderColor:C.blueM,
+    borderWidth:2,pointRadius:0,fill:false,tension:0.25}];
+  if(r.avgBuyFx>0) ds.push({label:'평균 매수환율',
+    data:pts.map(function(){ return r.avgBuyFx; }),
+    borderColor:C.coral,borderDash:[6,5],borderWidth:2,pointRadius:0,fill:false});
+  makeChart('cFx',{type:'line',data:{labels:pts.map(function(p){ return p.date; }),datasets:ds},
+    options:{maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},
+      plugins:{legend:{position:'bottom',labels:{boxWidth:14,boxHeight:14}},
+        tooltip:{callbacks:{label:function(c){ return ' '+c.dataset.label+': '+fmtFx(c.parsed.y); }}}},
+      scales:{x:{ticks:{maxTicksLimit:7,maxRotation:0,callback:function(v,i){
+        return pts[i]&&pts[i].date?pts[i].date.slice(0,7):''; }},grid:{display:false}},
+        y:{ticks:{callback:function(v){ return Math.round(v).toLocaleString(); }},grid:{color:C.grid}}}}});
+}
+function renderDecomp(){
+  var r=state.result, d=r.decomp, sum=d.price+d.fx+d.cross;
+  el('decompCap').textContent='평가손익 합계 '+fmtKrwS(sum)+' = 주가요인 '+fmtKrwS(d.price)+
+    ' + 환율요인 '+fmtKrwS(d.fx)+' + 교차항 '+fmtKrwS(d.cross);
+  makeChart('cDecomp',{type:'bar',
+    data:{labels:['주가요인','환율요인','교차항'],
+      datasets:[{data:[d.price,d.fx,d.cross],backgroundColor:[C.coral,C.blueM,C.gray],borderRadius:6,barThickness:34}]},
+    options:{indexAxis:'y',maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){ return ' '+fmtKrwS(c.parsed.x); }}}},
+      scales:{x:{ticks:{callback:function(v){ return fmtKrw(v); }},grid:{color:C.grid}},y:{grid:{display:false}}}}});
+}
+
+/* ── 시점대비 ── */
+function periodStart(){
+  var r=state.result;
+  if(state.period==='all') return r.spanFrom;
+  if(state.period==='ytd') return r.asof.slice(0,4)+'-01-01';
+  if(state.period==='1y') return shiftYears(r.asof,-1);
+  if(state.period==='3y') return shiftYears(r.asof,-3);
+  return el('customStart').value||r.spanFrom;
+}
+function renderPeriod(){
+  var r=state.result, d=currentData(), s=periodStart();
+  var ps=E.periodStats(d,r,s);
+  el('pDep').textContent=fmtKrw(ps.deposits);
+  el('pWd').textContent=fmtKrw(ps.withdrawals);
+  el('pRz').textContent=fmtKrwS(ps.realized); el('pRz').className='kv '+cls(ps.realized);
+  el('pDv').textContent=fmtKrw(ps.dividends);
+  var fb=E.flowBins(r._srcFlows||d.flows,r.flowKrwOf,s,r.asof);
+  makeChart('cFlows',{type:'bar',
+    data:{labels:fb.labels,datasets:[
+      {label:'입금',data:fb.inflow,backgroundColor:C.blueM,borderRadius:4},
+      {label:'출금',data:fb.outflow,backgroundColor:C.grayL,borderRadius:4}]},
+    options:{maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{boxWidth:14,boxHeight:14}},
+        tooltip:{callbacks:{label:function(c){ return ' '+c.dataset.label+': '+fmtKrw(Math.abs(c.parsed.y)); }}}},
+      scales:{x:{stacked:true,ticks:{maxTicksLimit:10,maxRotation:0},grid:{display:false}},
+        y:{stacked:true,ticks:{callback:function(v){ return fmtKrw(v); }},grid:{color:C.grid}}}}});
+  el('periodNote').textContent='구간 시작 '+s+' · 구간 수익률(%)은 가격히스토리 연동 단계에서 활성화 예정';
+}
+
+/* ── 수동 입력 목록 렌더 ── */
+/* ── 수동 입력 목록 렌더 (편집 모드 포함) ── */
+function renderManualTxList(){
+  var list=state.manual.tx;
+  var wrap=el('txListWrap');
+  if(!list.length){
+    state.editingTxIdx=null;
+    wrap.innerHTML='<div class="de-empty">수동 입력 거래 내역이 없습니다.</div>';
+    return;
+  }
+  var rows=list.map(function(t,i){
+    var editing=(state.editingTxIdx===i);
+    if(editing){
+      return '<tr class="de-edit-row"><td colspan="10">'+
+        '<div class="de-edit-form">'+
+        '<label>일자<input class="eif" id="etxDate" type="date" value="'+t.date+'"></label>'+
+        '<label>시장<select class="eif" id="etxMkt"><option'+(t.mkt==='KR'?' selected':'')+' value="KR">KR</option>'+
+          '<option'+(t.mkt==='US'?' selected':'')+' value="US">US</option></select></label>'+
+        '<label>티커<input class="eif" id="etxTicker" type="text" value="'+t.ticker+'" style="width:90px"></label>'+
+        '<label>종목명<input class="eif" id="etxName" type="text" value="'+(t.name||'')+'" style="width:120px"></label>'+
+        '<label>구분<select class="eif" id="etxSide"><option'+(t.side==='매수'?' selected':'')+'>매수</option>'+
+          '<option'+(t.side==='매도'?' selected':'')+'>매도</option></select></label>'+
+        '<label>수량<input class="eif" id="etxQty" type="number" min="0.0001" step="any" value="'+t.qty+'"></label>'+
+        '<label>단가<input class="eif" id="etxPrice" type="number" min="0" step="any" value="'+t.price+'"></label>'+
+        '<label>수수료<input class="eif" id="etxFee" type="number" min="0" step="any" value="'+(t.fee||0)+'"></label>'+
+        '<label id="etxFxWrap"'+(t.mkt!=='US'?' style="display:none"':'')+'>환율'+
+          '<input class="eif" id="etxFxRate" type="number" min="0" step="any" value="'+(t.fxRate||'')+'" placeholder="자동보충"></label>'+
+        '<label>계좌<input class="eif" id="etxAccount" type="text" list="acctlist" value="'+(t.account||'기본')+'" style="width:90px"></label>'+
+        '<label>유형<input class="eif" id="etxCat" type="text" list="catlist" value="'+(state.categories[t.ticker]||'')+'" placeholder="성장주" style="width:90px"></label>'+
+        '<div class="de-edit-btns">'+
+          '<button class="primary de-save" data-di="'+i+'">저장</button>'+
+          '<button class="de-cancel" data-di="'+i+'">취소</button>'+
+        '</div>'+
+        '<span class="de-msg" id="etxMsg"></span>'+
+        '</div>'+
+        '</td></tr>';
+    }
+    var editing_class = '';
+    return '<tr class="de-list-row'+editing_class+'" data-di="'+i+'">'+
+      '<td>'+t.date+'</td><td>'+t.mkt+'</td>'+
+      '<td class="left">'+t.ticker+(t.name?' <span class="tsub">'+t.name+'</span>':'')+'</td>'+
+      '<td>'+t.side+'</td><td>'+t.qty.toLocaleString()+'</td>'+
+      '<td>'+fmtLocal(t.price,t.mkt)+'</td>'+
+      '<td>'+(t.fee?fmtLocal(t.fee,t.mkt):'—')+'</td>'+
+      '<td>'+(t.mkt==='US'&&t.fxRate?fmtFx(t.fxRate):'—')+'</td>'+
+      '<td class="left">'+(t.account||'기본')+'</td>'+
+      '<td class="de-actions">'+
+        '<button class="de-edit-btn" data-di="'+i+'" title="수정">✎</button>'+
+        '<button class="de-del" data-di="'+i+'" title="삭제">✕</button>'+
+      '</td></tr>';
+  }).join('');
+  wrap.innerHTML='<p class="de-cnt">거래 총 '+list.length+'건 <span style="font-size:12.5px;font-weight:400;color:var(--faint)">· 행을 클릭하거나 ✎를 눌러 수정</span></p>'+
+    '<table class="de-list-table"><thead><tr>'+
+    '<th>일자</th><th>시장</th><th class="left">티커</th><th>구분</th>'+
+    '<th>수량</th><th>단가</th><th>수수료</th><th>환율</th><th class="left">계좌</th><th></th>'+
+    '</tr></thead><tbody>'+rows+'</tbody></table>';
+  // 이벤트 연결
+  wrap.querySelectorAll('.de-del').forEach(function(btn){
+    btn.addEventListener('click',function(e){ e.stopPropagation(); deleteManualTx(+btn.dataset.di); });
+  });
+  wrap.querySelectorAll('.de-edit-btn').forEach(function(btn){
+    btn.addEventListener('click',function(e){ e.stopPropagation(); startEditTx(+btn.dataset.di); });
+  });
+  wrap.querySelectorAll('.de-list-row').forEach(function(row){
+    row.addEventListener('click',function(){ startEditTx(+row.dataset.di); });
+  });
+  wrap.querySelectorAll('.de-save').forEach(function(btn){
+    btn.addEventListener('click',function(){ saveTxEdit(+btn.dataset.di); });
+  });
+  wrap.querySelectorAll('.de-cancel').forEach(function(btn){
+    btn.addEventListener('click',function(){ state.editingTxIdx=null; renderManualTxList(); });
+  });
+  // 편집 폼의 시장 토글
+  var etxMkt=document.getElementById('etxMkt');
+  var etxFxWrap=document.getElementById('etxFxWrap');
+  if(etxMkt&&etxFxWrap){
+    etxMkt.addEventListener('change',function(){
+      etxFxWrap.style.display=this.value==='US'?'flex':'none';
+    });
+  }
+}
+function renderManualFlList(){
+  var list=state.manual.flows;
+  var wrap=el('flListWrap');
+  if(!list.length){
+    state.editingFlIdx=null;
+    wrap.innerHTML='<div class="de-empty">수동 입력 입출금 내역이 없습니다.</div>';
+    return;
+  }
+  var rows=list.map(function(f,i){
+    var editing=(state.editingFlIdx===i);
+    if(editing){
+      return '<tr class="de-edit-row"><td colspan="7">'+
+        '<div class="de-edit-form">'+
+        '<label>일자<input class="eif" id="eflDate" type="date" value="'+f.date+'"></label>'+
+        '<label>구분<select class="eif" id="eflKind"><option'+(f.kind==='입금'?' selected':'')+'>입금</option>'+
+          '<option'+(f.kind==='출금'?' selected':'')+'>출금</option></select></label>'+
+        '<label>금액<input class="eif" id="eflAmount" type="number" min="0" step="any" value="'+f.amount+'"></label>'+
+        '<label>통화<select class="eif" id="eflCcy"><option'+(f.ccy==='KRW'?' selected':'')+' value="KRW">KRW</option>'+
+          '<option'+(f.ccy==='USD'?' selected':'')+' value="USD">USD</option></select></label>'+
+        '<label>계좌<input class="eif" id="eflAccount" type="text" list="acctlist" value="'+(f.account||'기본')+'" style="width:90px"></label>'+
+        '<label>메모<input class="eif" id="eflMemo" type="text" value="'+(f.memo||'')+'" style="width:130px" placeholder="선택"></label>'+
+        '<div class="de-edit-btns">'+
+          '<button class="primary de-save" data-di="'+i+'">저장</button>'+
+          '<button class="de-cancel" data-di="'+i+'">취소</button>'+
+        '</div>'+
+        '<span class="de-msg" id="eflMsg"></span>'+
+        '</div>'+
+        '</td></tr>';
+    }
+    return '<tr class="de-list-row" data-di="'+i+'">'+
+      '<td>'+f.date+'</td><td>'+f.kind+'</td>'+
+      '<td>'+f.amount.toLocaleString()+'</td><td>'+f.ccy+'</td>'+
+      '<td class="left">'+(f.account||'기본')+'</td>'+
+      '<td class="left">'+(f.memo||'—')+'</td>'+
+      '<td class="de-actions">'+
+        '<button class="de-edit-btn" data-di="'+i+'" title="수정">✎</button>'+
+        '<button class="de-del" data-di="'+i+'" title="삭제">✕</button>'+
+      '</td></tr>';
+  }).join('');
+  wrap.innerHTML='<p class="de-cnt">입출금 총 '+list.length+'건 <span style="font-size:12.5px;font-weight:400;color:var(--faint)">· 행을 클릭하거나 ✎를 눌러 수정</span></p>'+
+    '<table class="de-list-table"><thead><tr>'+
+    '<th>일자</th><th>구분</th><th>금액</th><th>통화</th>'+
+    '<th class="left">계좌</th><th class="left">메모</th><th></th>'+
+    '</tr></thead><tbody>'+rows+'</tbody></table>';
+  wrap.querySelectorAll('.de-del').forEach(function(btn){
+    btn.addEventListener('click',function(e){ e.stopPropagation(); deleteManualFlow(+btn.dataset.di); });
+  });
+  wrap.querySelectorAll('.de-edit-btn').forEach(function(btn){
+    btn.addEventListener('click',function(e){ e.stopPropagation(); startEditFl(+btn.dataset.di); });
+  });
+  wrap.querySelectorAll('.de-list-row').forEach(function(row){
+    row.addEventListener('click',function(){ startEditFl(+row.dataset.di); });
+  });
+  wrap.querySelectorAll('.de-save').forEach(function(btn){
+    btn.addEventListener('click',function(){ saveFlEdit(+btn.dataset.di); });
+  });
+  wrap.querySelectorAll('.de-cancel').forEach(function(btn){
+    btn.addEventListener('click',function(){ state.editingFlIdx=null; renderManualFlList(); });
+  });
+}
+
+/* ── 수동 입력 CRUD ── */
+function deleteManualTx(i){
+  if(state.editingTxIdx===i) state.editingTxIdx=null;
+  state.manual.tx.splice(i,1); lsSet(LS.tx,state.manual.tx); renderManualTxList(); render();
+}
+function deleteManualFlow(i){
+  if(state.editingFlIdx===i) state.editingFlIdx=null;
+  state.manual.flows.splice(i,1); lsSet(LS.fl,state.manual.flows); renderManualFlList(); render();
+}
+function startEditTx(i){
+  if(state.editingTxIdx===i){ state.editingTxIdx=null; }
+  else { state.editingTxIdx=i; }
+  state.editingFlIdx=null;
+  renderManualTxList();
+}
+function startEditFl(i){
+  if(state.editingFlIdx===i){ state.editingFlIdx=null; }
+  else { state.editingFlIdx=i; }
+  state.editingTxIdx=null;
+  renderManualFlList();
+}
+function saveTxEdit(i){
+  var date=document.getElementById('etxDate').value;
+  var mkt=document.getElementById('etxMkt').value;
+  var ticker=document.getElementById('etxTicker').value.trim().toUpperCase();
+  var name=document.getElementById('etxName').value.trim();
+  var side=document.getElementById('etxSide').value;
+  var qty=parseFloat(document.getElementById('etxQty').value);
+  var price=parseFloat(document.getElementById('etxPrice').value);
+  var fee=parseFloat(document.getElementById('etxFee').value)||0;
+  var fxRate=parseFloat(document.getElementById('etxFxRate').value)||null;
+  var account=document.getElementById('etxAccount').value.trim()||'기본';
+  var cat=(document.getElementById('etxCat')||{}).value||''; cat=cat.trim();
+  var msg=document.getElementById('etxMsg');
+  if(!date){ if(msg) msg.textContent='일자를 입력해 주세요.'; return; }
+  if(!ticker){ if(msg) msg.textContent='티커를 입력해 주세요.'; return; }
+  if(!(qty>0)){ if(msg) msg.textContent='수량은 양수여야 합니다.'; return; }
+  if(!(price>0)){ if(msg) msg.textContent='단가는 양수여야 합니다.'; return; }
+  if(mkt==='KR'){ var dg=ticker.replace(/\D/g,''); if(dg) ticker=dg.padStart(6,'0'); }
+  state.manual.tx[i]={date:date,mkt:mkt,ticker:ticker,name:name||ticker,side:side,
+    qty:qty,price:price,fee:fee,fxRate:(mkt==='US'?fxRate:null),account:account};
+  lsSet(LS.tx,state.manual.tx);
+  // 유형 변경 반영 (비우면 카테고리 삭제)
+  if(cat){ state.categories[ticker]=cat; }
+  else { delete state.categories[ticker]; }
+  lsSet(LS.cat,state.categories); rebuildCatColors(); updateCatDatalist();
+  state.editingTxIdx=null;
+  renderManualTxList(); render();
+}
+function saveFlEdit(i){
+  var date=document.getElementById('eflDate').value;
+  var kind=document.getElementById('eflKind').value;
+  var amount=parseFloat(document.getElementById('eflAmount').value);
+  var ccy=document.getElementById('eflCcy').value;
+  var account=document.getElementById('eflAccount').value.trim()||'기본';
+  var memo=document.getElementById('eflMemo').value.trim();
+  var msg=document.getElementById('eflMsg');
+  if(!date){ if(msg) msg.textContent='일자를 입력해 주세요.'; return; }
+  if(!(amount>0)){ if(msg) msg.textContent='금액은 양수여야 합니다.'; return; }
+  state.manual.flows[i]={date:date,kind:kind,amount:amount,ccy:ccy,account:account,memo:memo};
+  lsSet(LS.fl,state.manual.flows);
+  state.editingFlIdx=null;
+  renderManualFlList(); render();
+}
+
+function addTxRow(){
+  var date=el('txDate').value, mkt=el('txMkt').value;
+  var ticker=el('txTicker').value.trim().toUpperCase(), name=el('txName').value.trim();
+  var side=el('txSide').value;
+  var qty=parseFloat(el('txQty').value), price=parseFloat(el('txPrice').value);
+  var fee=parseFloat(el('txFee').value)||0, fxRate=parseFloat(el('txFxRate').value)||null;
+  var account=el('txAccount').value.trim()||'기본';
+  var cat=el('txCat').value.trim();
+  var msg=el('txMsg'); msg.className='de-msg'; msg.textContent='';
+  if(!date){ msg.textContent='일자를 입력해 주세요.'; return; }
+  if(!ticker){ msg.textContent='티커를 입력해 주세요.'; return; }
+  if(!(qty>0)){ msg.textContent='수량은 양수여야 합니다.'; return; }
+  if(!(price>0)){ msg.textContent='단가는 양수여야 합니다.'; return; }
+  if(mkt==='KR'){ var dg=ticker.replace(/\D/g,''); if(dg) ticker=dg.padStart(6,'0'); }
+  // 중복 감지: 동일 (일자·시장·티커·구분·수량)
+  var dup=state.manual.tx.some(function(t){
+    return t.date===date&&t.mkt===mkt&&t.ticker===ticker&&t.side===side&&Math.abs(t.qty-qty)<1e-9;
+  });
+  if(dup){
+    msg.className='de-msg'; msg.style.color='#633806';
+    msg.textContent='같은 일자·종목·구분·수량의 거래가 이미 있습니다. 그래도 추가하려면 다시 [+ 추가]를 누르세요.';
+    if(!addTxRow._dupConfirm){ addTxRow._dupConfirm=true; return; }
+  }
+  addTxRow._dupConfirm=false;
+  var row={date:date,mkt:mkt,ticker:ticker,name:name||ticker,side:side,qty:qty,price:price,fee:fee,fxRate:(mkt==='US'?fxRate:null),account:account};
+  state.manual.tx.push(row);
+  lsSet(LS.tx,state.manual.tx);
+  // 유형 입력 시 categories에 즉시 반영
+  if(cat){ state.categories[ticker]=cat; lsSet(LS.cat,state.categories); rebuildCatColors(); updateCatDatalist(); }
+  renderManualTxList(); render();
+  msg.style.color=''; msg.textContent='추가되었습니다 · '+ticker+' '+side+' '+qty+(cat?' ['+cat+']':'');
+  // 연속 입력: 일자·시장·구분 유지, 수량·가격·티커·종목명·유형 초기화
+  el('txQty').value=''; el('txPrice').value=''; el('txFee').value=''; el('txFxRate').value='';
+  el('txTicker').value=''; el('txName').value=''; el('txCat').value=''; el('txTicker').focus();
+}
+function addFlRow(){
+  var date=el('flDate').value, kind=el('flKind').value;
+  var amount=parseFloat(el('flAmount').value), ccy=el('flCcy').value;
+  var memo=el('flMemo').value.trim();
+  var account=el('flAccount').value.trim()||'기본';
+  var msg=el('flMsg'); msg.style.color=''; msg.textContent='';
+  if(!date){ msg.textContent='일자를 입력해 주세요.'; return; }
+  if(!(amount>0)){ msg.textContent='금액은 양수여야 합니다.'; return; }
+  var dup=state.manual.flows.some(function(f){
+    return f.date===date&&f.kind===kind&&f.ccy===ccy&&Math.abs(f.amount-amount)<1e-9;
+  });
+  if(dup){
+    msg.style.color='#633806';
+    msg.textContent='같은 일자·구분·금액의 입출금이 이미 있습니다. 다시 [+ 추가]를 누르면 추가됩니다.';
+    if(!addFlRow._dupConfirm){ addFlRow._dupConfirm=true; return; }
+  }
+  addFlRow._dupConfirm=false;
+  state.manual.flows.push({date:date,kind:kind,amount:amount,ccy:ccy,memo:memo,account:account});
+  lsSet(LS.fl,state.manual.flows);
+  renderManualFlList(); render();
+  msg.style.color=''; msg.textContent='추가되었습니다 · '+kind+' '+amount.toLocaleString()+' '+ccy;
+  el('flAmount').value=''; el('flMemo').value=''; el('flAmount').focus();
+}
+// 티커 입력 시 기존 종목명 자동완성
+function autofillName(){
+  var tk=el('txTicker').value.trim().toUpperCase();
+  var mkt=el('txMkt').value;
+  if(mkt==='KR'){ var dg=tk.replace(/\D/g,''); if(dg) tk=dg.padStart(6,'0'); }
+  var d=currentData();
+  if(tk && d.names && d.names[tk] && !el('txName').value){ el('txName').value=d.names[tk]; }
+  // 기존 카테고리 자동 채움 (이미 입력된 경우는 건드리지 않음)
+  var catInp=el('txCat');
+  if(catInp && tk && !catInp.value && state.categories[tk]){ catInp.value=state.categories[tk]; }
+}
+
+/* ── Excel 내보내기 ── */
+
+/* ── 수집용 종목목록(tickers.json) 생성 ── */
+function downloadTickersJson(){
+  var d=currentData();
+  if(!d.tx || !d.tx.length){
+    dmMsgGlobal('거래 내역이 없습니다. 거래를 입력하거나 Excel을 업로드한 뒤 다시 시도해 주세요.','warn');
+    return;
+  }
+  // 과거 거래 포함 — 전량 매도 종목도 포함 (되살 때 대비)
+  var usSet={}, krSet={};
+  d.tx.forEach(function(t){
+    var tk=String(t.ticker||'').trim();
+    if(!tk) return;
+    if(t.mkt==='US'){ usSet[tk.toUpperCase()]=1; }
+    else if(t.mkt==='KR'){ var dg=tk.replace(/\D/g,''); if(dg) krSet[dg.padStart(6,'0')]=1; }
+  });
+  var us=Object.keys(usSet).sort();
+  var kr=Object.keys(krSet).sort();
+  // 환율 시작일: 가장 오래된 거래일 (없으면 기본값)
+  var dates=d.tx.map(function(t){ return t.date; }).filter(Boolean).sort();
+  var fxStart=dates.length ? dates[0] : '2021-01-01';
+  var cfg={ US:us, KR:kr, fx_start:fxStart };
+  var blob=new Blob([JSON.stringify(cfg,null,2)+'\n'],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download='tickers.json';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  dmMsgGlobal('종목목록(tickers.json)을 내려받았습니다 · 미국 '+us.length+'종목, 한국 '+kr.length+'종목, 환율 시작일 '+fxStart+'. 이 파일을 GitHub 저장소에 올리면 다음 자동 수집부터 반영됩니다.','ok');
+}
+// 데이터관리 패널이 화면에 없을 수도 있으므로 상태줄로도 안내
+function dmMsgGlobal(text, kind){
+  var m=el('dmMsg');
+  if(m){ m.className='dm-msg'+(kind?' '+kind:''); m.textContent=text; }
+  setStatus(text);
+}
+
+function exportExcel(){
+  if(typeof XLSX==='undefined'){ alert('SheetJS 라이브러리가 로드되지 않았습니다. 인터넷 연결 후 새로고침해 주세요.'); return; }
+  var d=currentData();
+  function aoa(headers,rows){ return XLSX.utils.aoa_to_sheet([headers].concat(rows)); }
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, aoa(
+    ['일자','시장','티커','종목명','구분','수량','단가','수수료·제세금','체결환율','계좌'],
+    d.tx.map(function(t){ return [t.date,t.mkt,t.ticker,(d.names&&d.names[t.ticker])||t.name||'',t.side,t.qty,t.price,t.fee||0,t.fxRate||'',t.account||'']; })
+  ), '거래내역');
+  XLSX.utils.book_append_sheet(wb, aoa(
+    ['일자','구분','금액','통화','계좌','메모'],
+    d.flows.map(function(f){ return [f.date,f.kind,f.amount,f.ccy,f.account||'',f.memo||'']; })
+  ), '입출금');
+  XLSX.utils.book_append_sheet(wb, aoa(
+    ['일자','티커','세후 수령액','통화','계좌'],
+    (d.divs||[]).map(function(v){ return [v.date,v.ticker,v.amount,v.ccy,v.account||'']; })
+  ), '배당');
+  XLSX.utils.book_append_sheet(wb, aoa(
+    ['일자','티커','비율(1주→N주)'],
+    (d.splits||[]).map(function(s){ return [s.date,s.ticker,s.ratio]; })
+  ), '분할이벤트');
+  XLSX.utils.book_append_sheet(wb, aoa(
+    ['기준일시','티커','시장','현재가','통화'],
+    (d.snapshot&&d.snapshot.prices||[]).map(function(p){ return [(d.snapshot.asof||'')+' 00:00',p.ticker,p.mkt,p.price,p.ccy||'']; })
+  ), '시세스냅샷');
+  XLSX.utils.book_append_sheet(wb, aoa(
+    ['일자','USD/KRW'],
+    (d.fx||[]).map(function(r){ return [r.date,r.rate]; })
+  ), '환율히스토리');
+  var fname='자산관리_'+(d.snapshot&&d.snapshot.asof||new Date().toISOString().slice(0,10))+'.xlsx';
+  XLSX.writeFile(wb,fname);
+}
+
+
+/* ── 데이터 관리: 백업 / 복원 / 초기화 ── */
+function dmMsg(text, kind){
+  var m=el('dmMsg'); m.className='dm-msg'+(kind?' '+kind:''); m.textContent=text;
+}
+function backupData(){
+  var payload={
+    _type:'amd-backup', _version:1,
+    _createdAt:new Date().toISOString(),
+    categories: state.categories,
+    targets: state.targets,
+    manualTx: state.manual.tx,
+    manualFlows: state.manual.flows,
+    githubUrl: lsGet(LS.gh)||''
+  };
+  var blob=new Blob([JSON.stringify(payload,null,1)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  var stamp=new Date().toISOString().slice(0,10);
+  a.href=url; a.download='자산관리_백업_'+stamp+'.json';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  var cnt=(state.manual.tx.length)+'건 거래 · '+(state.manual.flows.length)+'건 입출금 · '+
+    Object.keys(state.categories).length+'개 카테고리';
+  dmMsg('백업을 내려받았습니다 ('+cnt+'). 안전한 곳에 보관하세요.', 'ok');
+}
+function restoreData(file){
+  var rd=new FileReader();
+  rd.onload=function(e){
+    var j;
+    try{ j=JSON.parse(e.target.result); }
+    catch(err){ dmMsg('백업 파일을 읽지 못했습니다(JSON 형식 오류).', 'err'); return; }
+    if(!j || j._type!=='amd-backup'){
+      dmMsg('이 파일은 자산관리 대시보드 백업이 아닙니다.', 'err'); return;
+    }
+    // 복원: 누락 필드는 빈 값으로 안전 처리
+    state.categories = (j.categories && typeof j.categories==='object') ? j.categories : {};
+    state.targets = (j.targets && typeof j.targets==='object') ? j.targets : {};
+    state.manual.tx = Array.isArray(j.manualTx) ? j.manualTx : [];
+    state.manual.flows = Array.isArray(j.manualFlows) ? j.manualFlows : [];
+    lsSet(LS.cat, state.categories);
+    lsSet(LS.tgt, state.targets);
+    lsSet(LS.tx, state.manual.tx);
+    lsSet(LS.fl, state.manual.flows);
+    if(j.githubUrl){ lsSet(LS.gh, j.githubUrl); } else { try{ localStorage.removeItem(LS.gh); }catch(e){} }
+    rebuildCatColors();
+    renderManualTxList(); renderManualFlList();
+    render();
+    var when = j._createdAt ? (' (' + j._createdAt.slice(0,10) + ' 백업)') : '';
+    dmMsg('복원 완료'+when+' · 거래 '+state.manual.tx.length+'건 · 입출금 '+state.manual.flows.length+'건 · 카테고리 '+Object.keys(state.categories).length+'개.', 'ok');
+  };
+  rd.readAsText(file);
+}
+function execWipe(){
+  try{ [LS.cat,LS.tx,LS.fl,LS.tgt,LS.gh].forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
+  state.categories={}; state.targets={}; state.manual.tx=[]; state.manual.flows=[];
+  state.base=null; state.extraWarnings=[];
+  state.account=null; state.view='ticker'; state.period='all'; state.inclCash=true;
+  rebuildCatColors();
+  renderManualTxList(); renderManualFlList();
+  setStatus('데이터가 없습니다. Excel 업로드 또는 직접 입력으로 시작하세요.');
+  render();
+  hideWipePanel();
+  dmMsg('전체 초기화를 완료했습니다. 모든 데이터가 삭제되었습니다.', 'ok');
+}
+function showWipePanel(){
+  el('wipePanel').style.display='block';
+  el('wipeStep1').style.display='block';
+  el('wipeStep2').style.display='none';
+  el('wipeConfirmInput').value='';
+  el('btnWipeConfirm').disabled=true;
+  dmMsg('','');
+  try{ el('wipePanel').scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(e){}
+}
+function hideWipePanel(){
+  el('wipePanel').style.display='none';
+  el('wipeStep1').style.display='block';
+  el('wipeStep2').style.display='none';
+  el('wipeConfirmInput').value='';
+  el('btnWipeConfirm').disabled=true;
+}
+function wipeAll(){ showWipePanel(); }
+
+/* ── 데이터 로드 ── */
+function loadSample(){
+  state.base={tx:SAMPLE.tx,flows:SAMPLE.flows,divs:SAMPLE.divs,splits:SAMPLE.splits,
+    snapshot:{asof:SAMPLE.snapshot.asof,prices:SAMPLE.snapshot.prices},fx:SAMPLE.fx,names:SAMPLE.names};
+  state.extraWarnings=[];
+  setStatus('데이터 출처: 내장 샘플 (거래 '+SAMPLE.tx.length+'건 · 입출금 '+SAMPLE.flows.length+'건) — Excel 업로드로 교체 가능');
+  render();
+}
+function handleFile(file){
+  if(typeof XLSX==='undefined'){ showMessages(['SheetJS 로드 실패 — 인터넷 연결 후 새로고침해 주세요.'],[]);return; }
+  var rd=new FileReader();
+  rd.onload=function(e){
+    try{
+      var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      var sheets={};
+      wb.SheetNames.forEach(function(n){
+        sheets[n]=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null});
+      });
+      var norm=E.normalizeWorkbook(sheets);
+      if(norm.errors.length){ showMessages(norm.errors,norm.warnings);
+        setStatus('업로드 실패: '+file.name+' — 오류 수정 후 다시 업로드해 주세요.'); return; }
+      try{ localStorage.removeItem(LS.wiped); }catch(e){}
+      // tx·flows → manual (편집 가능, localStorage 저장)
+      state.manual.tx    = norm.data.tx;
+      state.manual.flows = norm.data.flows;
+      lsSet(LS.tx, state.manual.tx);
+      lsSet(LS.fl, state.manual.flows);
+      // 메타데이터(시세·환율·분할·이름) → base
+      state.base={ tx:[], flows:[], divs:norm.data.divs,
+        splits:norm.data.splits, snapshot:norm.data.snapshot,
+        fx:norm.data.fx, names:norm.data.names };
+      state.extraWarnings=norm.warnings.slice();
+      setStatus('데이터 출처: '+file.name+' (거래 '+norm.data.tx.length+'건 · 입출금 '+norm.data.flows.length+'건 · 배당 '+norm.data.divs.length+'건)');
+      renderManualTxList(); renderManualFlList();
+      render();
+    }catch(err){ showMessages(['파일을 읽지 못했습니다: '+err.message],[]); }
+  };
+  rd.readAsArrayBuffer(file);
+}
+
+/* ── GitHub 가격 불러오기 (prices.json) ── */
+function applyPricesJson(j, srcLabel){
+  if(!j || !Array.isArray(j.prices)){ throw new Error('형식 오류: prices 배열이 없습니다.'); }
+  if(!state.base){ state.base={ tx:[], flows:[], divs:[], splits:[], snapshot:{asof:null,prices:[]}, fx:[], names:{} }; }
+  // 시세스냅샷 교체
+  var prices=j.prices.map(function(p){
+    var mkt=String(p.mkt||'').toUpperCase();
+    var tk=String(p.ticker||'').trim().toUpperCase();
+    if(mkt==='KR'){ var dg=tk.replace(/\D/g,''); if(dg) tk=dg.padStart(6,'0'); }
+    return { ticker:tk, mkt:mkt, price:Number(p.price), ccy:String(p.ccy||(mkt==='US'?'USD':'KRW')).toUpperCase() };
+  }).filter(function(p){ return p.ticker && p.price>0; });
+  var asof=j.asof || (j.asof_time||'').slice(0,10) || new Date().toISOString().slice(0,10);
+  state.base.snapshot={ asof:asof, prices:prices };
+  // 환율 교체(있을 때만)
+  if(Array.isArray(j.fx) && j.fx.length){
+    state.base.fx=j.fx.map(function(r){ return { date:String(r.date).slice(0,10), rate:Number(r.rate) }; })
+      .filter(function(r){ return r.date && r.rate>0; });
+  }
+  var warn=[];
+  if(Array.isArray(j.failures) && j.failures.length) warn.push('수집 실패 종목: '+j.failures.join(', ')+' — 해당 종목은 직전 값이 없으면 평가에서 제외됩니다.');
+  if(j.note) warn.push(j.note);
+  state.extraWarnings=warn;
+  setStatus('시세 출처: '+srcLabel+' · 기준일 '+asof+' (가격 '+prices.length+'건) — 거래·입출금은 기존 데이터 유지');
+  render();
+}
+function showGhPanel(current){
+  var inp=el('ghUrlInput'); inp.value=current||'';
+  el('ghPanel').style.display='flex';
+  inp.focus(); inp.select();
+}
+function hideGhPanel(){ el('ghPanel').style.display='none'; }
+function loadGithubPrices(promptForUrl){
+  var url=lsGet(LS.gh)||'';
+  if(promptForUrl || !url){
+    showGhPanel(url); return;   // 인라인 패널로 대체
+  }
+  fetchGithubPrices(url);
+}
+// github.com/.../blob/.../file → raw.githubusercontent.com 자동 변환
+function normalizeGhUrl(url){
+  var u=url.trim();
+  var m=u.match(/github\.com\/([^\/]+)\/([^\/]+)\/blob\/([^\/]+)\/(.*)/);
+  if(m) return 'https://raw.githubusercontent.com/'+m[1]+'/'+m[2]+'/'+m[3]+'/'+m[4];
+  return u;
+}
+// raw URL → jsDelivr CDN (CORS 더 안정적)
+function toJsDelivr(url){
+  var m=url.match(/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/([^\/]+)\/(.*)/);
+  if(m) return 'https://cdn.jsdelivr.net/gh/'+m[1]+'/'+m[2]+'@'+m[3]+'/'+m[4];
+  return null;
+}
+// jsDelivr JSON API (CORS 헤더 제공 — 가장 안정적)
+function toJsDelivrApi(url){
+  var m=url.match(/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/([^\/]+)\/(.*)/);
+  if(m) return 'https://cdn.jsdelivr.net/gh/'+m[1]+'/'+m[2]+'@'+m[3]+'/'+m[4];
+  return null;
+}
+function fetchGithubPrices(url){
+  var rawUrl=normalizeGhUrl(url);
+  lsSet(LS.gh, rawUrl);
+  var jUrl=toJsDelivr(rawUrl);
+  // 시도 순서: jsDelivr(CORS 지원) → raw 직접 → 실패 시 파일 업로드 안내
+  var attempts=[];
+  if(jUrl) attempts.push({u:jUrl, label:'jsDelivr CDN'});
+  attempts.push({u:rawUrl, label:'GitHub 직접'});
+
+  setStatus('가격을 불러오는 중… ('+attempts[0].label+')');
+  var idx=0, lastErr=null;
+  function tryNext(){
+    if(idx>=attempts.length){ onAllFail(lastErr); return; }
+    var a=attempts[idx++];
+    var u=a.u+(a.u.indexOf('?')>=0?'&':'?')+'_t='+Date.now();
+    setStatus('가격을 불러오는 중… ('+a.label+')');
+    fetch(u,{cache:'no-store',mode:'cors'})
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(j){ applyPricesJson(j,'GitHub'); })
+      .catch(function(e){ lastErr=e; tryNext(); });
+  }
+  function onAllFail(err){
+    var local = location.protocol==='file:';
+    var msgs=['GitHub 가격 자동 불러오기에 실패했습니다: '+(err&&err.message||'네트워크 오류')];
+    if(local){
+      msgs.push('원인: 이 파일이 내 컴퓨터에서 직접 열린 상태(file://)라 브라우저 보안 정책이 외부 연결을 차단했습니다.');
+      msgs.push('해결: 아래 "prices.json 파일 올리기"가 가장 확실합니다 — GitHub에서 prices.json을 내려받아 그 파일을 올리면 됩니다.');
+    } else {
+      msgs.push('URL과 저장소 Public 여부를 확인해 주세요. prices.json이 없으면 Actions를 한 번 실행해 주세요.');
+    }
+    showMessages(msgs,[]);
+    setStatus('자동 불러오기 실패 — "prices.json 파일 올리기"로 직접 올릴 수 있습니다.');
+    // 파일 업로드 폴백 UI 표시
+    var fb=el('ghFallback'); if(fb) fb.style.display='flex';
+  }
+  tryNext();
+}
+// prices.json 파일 직접 업로드 (네트워크 완전 우회)
+function loadPricesFile(file){
+  var rd=new FileReader();
+  rd.onload=function(e){
+    try{
+      var j=JSON.parse(e.target.result);
+      applyPricesJson(j,'파일');
+      var fb=el('ghFallback'); if(fb) fb.style.display='none';
+      hideGhPanel();
+    }catch(err){
+      showMessages(['prices.json 파일을 읽지 못했습니다: '+err.message+' — GitHub에서 받은 prices.json이 맞는지 확인해 주세요.'],[]);
+    }
+  };
+  rd.readAsText(file);
+}
+
+/* ── 카테고리 인라인 편집 이벤트 위임 ── */
+el('holdTable').addEventListener('click',function(e){
+  var span=e.target.closest('.cat-tag');
+  if(!span) return;
+  var inp=span.nextElementSibling;
+  if(!inp||!inp.classList.contains('cat-inp')) return;
+  span.style.display='none'; inp.style.display='inline-block';
+  inp.focus(); inp.select();
+});
+el('holdTable').addEventListener('blur',function(e){
+  if(!e.target.classList.contains('cat-inp')) return;
+  var inp=e.target, span=inp.previousElementSibling;
+  saveCat(inp.dataset.ticker, inp.value);
+  inp.style.display='none';
+  if(span) span.style.display='';
+},true);
+el('holdTable').addEventListener('keydown',function(e){
+  if(!e.target.classList.contains('cat-inp')) return;
+  if(e.key==='Enter'||e.key==='Tab'){
+    saveCat(e.target.dataset.ticker, e.target.value);
+    if(e.key==='Enter') e.preventDefault();
+  } else if(e.key==='Escape'){
+    e.target.style.display='none';
+    if(e.target.previousElementSibling) e.target.previousElementSibling.style.display='';
+  }
+});
+
+/* ── 일반 이벤트 ── */
+el('btnUpload').addEventListener('click',function(){ el('fileInput').click(); });
+el('fileInput').addEventListener('change',function(e){ if(e.target.files[0]) handleFile(e.target.files[0]); e.target.value=''; });
+el('btnLoadSample').addEventListener('click',loadSample);
+el('btnExport').addEventListener('click',exportExcel);
+el('btnTickers').addEventListener('click',downloadTickersJson);
+/* ── 배율 컨트롤 ── */
+var ZOOM_LEVELS=[70,75,80,85,90,95,100,110,120];
+var zoomIdx=(function(){var v=parseInt(lsGet(LS.zoom)); return (!isNaN(v)&&v>=0&&v<ZOOM_LEVELS.length)?v:6;})();
+function applyZoom(){
+  document.documentElement.style.zoom=ZOOM_LEVELS[zoomIdx]/100;
+  if(el('zoomLabel')) el('zoomLabel').textContent=ZOOM_LEVELS[zoomIdx]+'%';
+  lsSet(LS.zoom,String(zoomIdx));
+}
+applyZoom();
+el('btnZoomIn').addEventListener('click',function(){
+  if(zoomIdx<ZOOM_LEVELS.length-1){zoomIdx++;applyZoom();}
+});
+el('btnZoomOut').addEventListener('click',function(){
+  if(zoomIdx>0){zoomIdx--;applyZoom();}
+});
+el('btnGh').addEventListener('click',function(){ loadGithubPrices(true); });
+el('btnGhFetch').addEventListener('click',function(){
+  var url=el('ghUrlInput').value.trim();
+  if(!url){ el('ghUrlInput').focus(); return; }
+  hideGhPanel(); fetchGithubPrices(url);
+});
+el('btnGhClose').addEventListener('click',hideGhPanel);
+el('btnPricesFile').addEventListener('click',function(){ el('pricesFileInput').click(); });
+el('pricesFileInput').addEventListener('change',function(e){ if(e.target.files[0]) loadPricesFile(e.target.files[0]); e.target.value=''; });
+el('ghUrlInput').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){ e.preventDefault(); el('btnGhFetch').click(); }
+  if(e.key==='Escape') hideGhPanel();
+});
+el('btnBackup').addEventListener('click',backupData);
+el('btnRestore').addEventListener('click',function(){ el('restoreInput').click(); });
+el('restoreInput').addEventListener('change',function(e){ if(e.target.files[0]) restoreData(e.target.files[0]); e.target.value=''; });
+el('btnWipe').addEventListener('click',wipeAll);
+// 초기화 패널 단계별 이벤트
+el('btnWipeCancel1').addEventListener('click',hideWipePanel);
+el('btnWipeCancel2').addEventListener('click',hideWipePanel);
+el('btnWipeNext').addEventListener('click',function(){
+  el('wipeStep1').style.display='none';
+  el('wipeStep2').style.display='block';
+  el('wipeConfirmInput').focus();
+});
+el('wipeConfirmInput').addEventListener('input',function(){
+  el('btnWipeConfirm').disabled = this.value.trim()!=='초기화';
+});
+el('btnWipeConfirm').addEventListener('click',function(){
+  if(el('wipeConfirmInput').value.trim()==='초기화') execWipe();
+});
+el('btnAddTx').addEventListener('click',addTxRow);
+el('btnAddFl').addEventListener('click',addFlRow);
+el('txMkt').addEventListener('change',function(){ el('txFxWrap').style.display=this.value==='US'?'flex':'none'; });
+
+document.querySelectorAll('.toggles .tg[data-view]').forEach(function(t){
+  t.addEventListener('click',function(){
+    document.querySelectorAll('.tg[data-view]').forEach(function(x){ x.classList.remove('on'); });
+    t.classList.add('on'); state.view=t.dataset.view; renderDonut();
+  });
+});
+el('ckCash').addEventListener('change',function(e){ state.inclCash=e.target.checked; renderDonut(); });
+document.querySelectorAll('#periodChips .tg').forEach(function(t){
+  t.addEventListener('click',function(){
+    document.querySelectorAll('#periodChips .tg').forEach(function(x){ x.classList.remove('on'); });
+    t.classList.add('on'); state.period=t.dataset.p;
+    el('customStart').style.display=state.period==='custom'?'inline-block':'none';
+    renderPeriod();
+  });
+});
+el('customStart').addEventListener('change',function(){ if(state.period==='custom') renderPeriod(); });
+el('holdTable').querySelectorAll('th[data-k]').forEach(function(th){
+  th.addEventListener('click',function(){
+    var k=th.dataset.k;
+    if(sortKey===k) sortDesc=!sortDesc; else { sortKey=k; sortDesc=true; }
+    renderTable();
+  });
+});
+document.querySelectorAll('.de-tab').forEach(function(t){
+  t.addEventListener('click',function(){
+    document.querySelectorAll('.de-tab').forEach(function(x){ x.classList.remove('on'); });
+    t.classList.add('on');
+    el('paneTx').style.display=t.dataset.de==='tx'?'block':'none';
+    el('paneFl').style.display=t.dataset.de==='fl'?'block':'none';
+  });
+});
+// 유형 성과 지표 토글(연환산/누적)
+document.querySelectorAll('#catMetricSeg .seg-b').forEach(function(b){
+  b.addEventListener('click',function(){
+    document.querySelectorAll('#catMetricSeg .seg-b').forEach(function(x){ x.classList.remove('on'); });
+    b.classList.add('on'); catMetric=b.dataset.m; renderCategoryCard();
+  });
+});
+// 티커 입력 시 종목명 자동완성
+// 편집 폼 키보드 단축키 (Enter=저장, Escape=취소) — 이벤트 위임
+['txListWrap','flListWrap'].forEach(function(wid){
+  var wrap=el(wid); if(!wrap) return;
+  wrap.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){
+      state.editingTxIdx=null; state.editingFlIdx=null;
+      renderManualTxList(); renderManualFlList();
+    }
+    if(e.key==='Enter' && !e.shiftKey){
+      var si=document.getElementById('etxMsg');
+      var fi=document.getElementById('eflMsg');
+      if(si && state.editingTxIdx!==null){ e.preventDefault(); saveTxEdit(state.editingTxIdx); }
+      else if(fi && state.editingFlIdx!==null){ e.preventDefault(); saveFlEdit(state.editingFlIdx); }
+    }
+  });
+});
+el('txTicker').addEventListener('blur', autofillName);
+el('txTicker').addEventListener('change', autofillName);
+// Enter로 추가 (거래·입출금 폼)
+['txQty','txPrice','txFee','txFxRate'].forEach(function(id){
+  el(id).addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); addTxRow(); } });
+});
+['flAmount','flMemo'].forEach(function(id){
+  el(id).addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); addFlRow(); } });
+});
+
+/* ── 부트 ── */
+if(!hasChart) bootWarnings.push('차트 라이브러리(Chart.js) 로드 실패 — 인터넷 연결 후 새로고침하면 차트가 표시됩니다. 수치는 정상입니다.');
+// 입력 폼 일자 기본값 = 오늘
+(function(){
+  var today=new Date(); var iso=today.getFullYear()+'-'+('0'+(today.getMonth()+1)).slice(-2)+'-'+('0'+today.getDate()).slice(-2);
+  if(el('txDate')) el('txDate').value=iso;
+  if(el('flDate')) el('flDate').value=iso;
+})();
+renderManualTxList();
+renderManualFlList();
+// 샘플은 자동 로드하지 않음 — 수동입력·Excel·백업 데이터만 렌더
+// (샘플을 보려면 빈 화면의 "샘플 데이터로 둘러보기" 버튼 사용)
+render();
+// 저장된 GitHub 주소가 있으면 최신 종가 자동 반영
+if(lsGet(LS.gh)){ loadGithubPrices(false); }
+})();
+</script>
+</body>
+</html>
