@@ -1,12 +1,18 @@
 {
- "asof": "2026-06-13",
- "asof_time": "2026-06-13 12:53",
+ "asof": "2026-06-14",
+ "asof_time": "2026-06-14 00:59",
  "tz": "Asia/Seoul",
  "prices": [
   {
    "ticker": "DRAM",
    "mkt": "US",
    "price": 65.01,
+   "ccy": "USD"
+  },
+  {
+   "ticker": "EETH",
+   "mkt": "US",
+   "price": 20.38,
    "ccy": "USD"
   },
   {
@@ -34,6 +40,24 @@
    "ccy": "USD"
   },
   {
+   "ticker": "HII",
+   "mkt": "US",
+   "price": 297.68,
+   "ccy": "USD"
+  },
+  {
+   "ticker": "IONQ",
+   "mkt": "US",
+   "price": 57.85,
+   "ccy": "USD"
+  },
+  {
+   "ticker": "JEPQ",
+   "mkt": "US",
+   "price": 59.86,
+   "ccy": "USD"
+  },
+  {
    "ticker": "LEU",
    "mkt": "US",
    "price": 162.58,
@@ -46,15 +70,51 @@
    "ccy": "USD"
   },
   {
+   "ticker": "NOC",
+   "mkt": "US",
+   "price": 550.33,
+   "ccy": "USD"
+  },
+  {
    "ticker": "NVDA",
    "mkt": "US",
    "price": 205.19,
    "ccy": "USD"
   },
   {
+   "ticker": "QBTS",
+   "mkt": "US",
+   "price": 23.37,
+   "ccy": "USD"
+  },
+  {
+   "ticker": "QQQ",
+   "mkt": "US",
+   "price": 721.34,
+   "ccy": "USD"
+  },
+  {
+   "ticker": "QTUM",
+   "mkt": "US",
+   "price": 161.3,
+   "ccy": "USD"
+  },
+  {
+   "ticker": "SCHD",
+   "mkt": "US",
+   "price": 32.82,
+   "ccy": "USD"
+  },
+  {
    "ticker": "SNDK",
    "mkt": "US",
    "price": 1980.1,
+   "ccy": "USD"
+  },
+  {
+   "ticker": "SPYM",
+   "mkt": "US",
+   "price": 87.06,
    "ccy": "USD"
   },
   {
@@ -103,6 +163,24 @@
    "ticker": "032830",
    "mkt": "KR",
    "price": 385500,
+   "ccy": "KRW"
+  },
+  {
+   "ticker": "069500",
+   "mkt": "KR",
+   "price": 129270,
+   "ccy": "KRW"
+  },
+  {
+   "ticker": "379800",
+   "mkt": "KR",
+   "price": 25420,
+   "ccy": "KRW"
+  },
+  {
+   "ticker": "379810",
+   "mkt": "KR",
+   "price": 29645,
    "ccy": "KRW"
   }
  ],
