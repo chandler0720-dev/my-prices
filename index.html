@@ -135,6 +135,8 @@ padding:2px 6px;font-size:14px;border-radius:5px;opacity:0;transition:opacity .1
 .zoom-ctrl{display:flex;align-items:center;gap:4px}
 .zoom-ctrl button{padding:5px 10px;font-size:13px;border-radius:7px;min-width:32px}
 #zoomLabel{font-size:13px;color:var(--mut);min-width:42px;text-align:center}
+/* ── 분석 카드 툴팁 ── */
+.kt{display:inline-block;margin-left:5px;font-size:11px;color:var(--faint);cursor:help;border:1px solid var(--line);border-radius:50%;width:15px;height:15px;line-height:13px;text-align:center}
 /* ── 시세 없음 뱃지 ── */
 .no-px-tag{background:#f0efe8;color:var(--faint);font-size:11px;padding:2px 7px;border-radius:999px;margin-left:4px}
 /* ── 초기화 확인 패널 ── */
@@ -154,6 +156,11 @@ button.danger:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
 .es-desc{font-size:14.5px;color:var(--mut);margin:0 0 14px}
 .es-list{margin:0 0 14px;padding-left:20px;font-size:14.5px;color:var(--ink);line-height:1.9}
 .es-list b{font-weight:600}
+/* ── 계좌 설정 ── */
+.ac-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;margin-bottom:6px}
+.ac-name{flex:1;font-size:14px;font-weight:600}
+.ac-hidden .ac-name{color:var(--faint);text-decoration:line-through}
+.ac-btn{padding:3px 8px;font-size:12px;border-radius:6px;min-width:28px}
 /* ── 데이터 관리 ── */
 .dm-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .dm-gap{flex:1;min-width:20px}
@@ -317,20 +324,23 @@ cursor:pointer;color:var(--mut);font-size:14px}
     </div>
   </div>
 
-  <!-- 리밸런싱 -->
-  <div class="card" style="margin-top:16px">
-    <h3>리밸런싱 <span style="font-size:14px;font-weight:400;color:var(--mut)">목표 비중 대비</span></h3>
-    <p class="cap">유형별 목표 비중(%)을 입력하면 현재와의 괴리와 조정 금액을 계산합니다. 목표는 주식 평가액(현금 제외) 기준이며 브라우저에 저장됩니다.</p>
-    <div id="rebalNote" class="rebal-note"></div>
-    <div class="tablewrap">
-      <table id="rebalTable" style="min-width:680px">
-        <thead><tr>
-          <th class="left">유형</th><th>현재 비중</th><th>목표 비중</th>
-          <th>현재 평가액</th><th>목표 평가액</th><th>조정 필요</th>
-        </tr></thead>
-        <tbody></tbody>
-        <tfoot></tfoot>
-      </table>
+  <!-- 리밸런싱 (계좌별) -->
+  <div class="card" id="rebalCard" style="margin-top:16px">
+    <h3>리밸런싱 <span style="font-size:14px;font-weight:400;color:var(--mut)" id="rebalAcctLabel">계좌별 목표 비중</span></h3>
+    <div id="rebalGuide" class="rebal-note" style="display:none">상단 계좌 칩에서 <b>특정 계좌를 선택</b>하면 그 계좌의 목표 비중을 설정할 수 있습니다. 리밸런싱은 계좌별로 따로 관리됩니다.</div>
+    <div id="rebalBody" style="display:none">
+      <p class="cap">유형별 목표 비중(%)을 입력하면 현재와의 괴리와 조정 금액을 계산합니다. 목표는 <b>선택한 계좌</b>의 주식 평가액(현금 제외) 기준이며 계좌별로 브라우저에 저장됩니다.</p>
+      <div id="rebalNote" class="rebal-note"></div>
+      <div class="tablewrap">
+        <table id="rebalTable" style="min-width:680px">
+          <thead><tr>
+            <th class="left">유형</th><th>현재 비중</th><th>목표 비중</th>
+            <th>현재 평가액</th><th>목표 평가액</th><th>조정 필요</th>
+          </tr></thead>
+          <tbody></tbody>
+          <tfoot></tfoot>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -372,14 +382,45 @@ cursor:pointer;color:var(--mut);font-size:14px}
   <div class="chart-s"><canvas id="cFlows"></canvas></div>
   <p class="cap" style="margin-top:12px" id="periodNote"></p>
 </div>
+
+<h2>기간 수익률 분석 <span class="sub">TWR · MWR · 입출금 효과 분리</span></h2>
+<div class="card">
+  <p class="cap">가격 히스토리(history.json)를 불러오면 특정 시점부터의 순수 운용성과(TWR)와 자금가중 수익률(MWR)을 분리해서 봅니다. 배당을 포함한 총수익 기준입니다.</p>
+  <div id="prNoHist" class="rebal-note">
+    가격 히스토리가 없습니다. <b>history.json 불러오기</b> 버튼으로 연결하거나, GitHub Actions에서 "Backfill History"를 실행해 주세요.
+    <button id="btnLoadHist" class="primary" style="margin-left:10px">history.json 불러오기</button>
+    <input type="file" id="histFileInput" accept=".json,application/json" style="display:none">
+  </div>
+  <div id="prBody" style="display:none">
+    <div class="toggles" id="prChips" style="margin-bottom:14px">
+      <span class="tg on" data-p="all">전체</span>
+      <span class="tg" data-p="ytd">YTD</span>
+      <span class="tg" data-p="1y">1년</span>
+      <span class="tg" data-p="3y">3년</span>
+      <span class="tg" data-p="custom">시작일 지정</span>
+      <input type="date" id="prStart" style="display:none">
+      <span style="font-size:13px;color:var(--mut);margin-left:4px" id="prRange"></span>
+    </div>
+    <div class="statgrid">
+      <div class="stat"><p class="kl">TWR (누적)<span class="kt" title="시간가중 수익률: 입출금 타이밍 영향을 제거한 순수 운용성과">ⓘ</span></p><p class="kv" id="prTwr">—</p><p class="ks" id="prTwrAnn"></p></div>
+      <div class="stat"><p class="kl">MWR (누적)<span class="kt" title="금액가중 수익률(XIRR): 입출금 타이밍·규모까지 반영한 실제 자산 증가율">ⓘ</span></p><p class="kv" id="prMwr">—</p><p class="ks">연환산 기준</p></div>
+      <div class="stat"><p class="kl">입출금 효과<span class="kt" title="MWR − TWR. 양수면 입출금 타이밍이 성과에 기여, 음수면 손해">ⓘ</span></p><p class="kv" id="prGap">—</p><p class="ks">MWR − TWR</p></div>
+      <div class="stat"><p class="kl">구간 배당</p><p class="kv" id="prDiv">—</p><p class="ks">총수익 포함</p></div>
+    </div>
+    <div style="margin-top:14px"><div class="chart-s"><canvas id="cTwrSeg"></canvas></div></div>
+    <p class="cap" style="margin-top:12px" id="prNote"></p>
+  </div>
+</div>
 </div><!-- /mainContent -->
 
-<h2>데이터 직접 입력 <span class="sub">브라우저 자동 저장 · Excel과 합산</span></h2>
+<h2>데이터 직접 입력 <span class="sub">거래·입출금·배당·분할 전체 관리</span></h2>
 <div class="card">
   <p class="cap">입력 내역은 브라우저에 자동 저장되며(localStorage), Excel 업로드 데이터와 합산하여 계산됩니다.</p>
   <div class="de-tabs">
     <button class="de-tab on" id="tabTx" data-de="tx">거래내역</button>
     <button class="de-tab" id="tabFl" data-de="fl">입출금</button>
+    <button class="de-tab" id="tabDv" data-de="dv">배당</button>
+    <button class="de-tab" id="tabSp" data-de="sp">액면분할</button>
     <span class="sp"></span>
   </div>
   <!-- 거래내역 -->
@@ -415,7 +456,33 @@ cursor:pointer;color:var(--mut);font-size:14px}
     </div>
     <div class="de-list"><div id="flListWrap"></div></div>
   </div>
+  <!-- 배당 -->
+  <div id="paneDv" style="display:none">
+    <div class="de-form">
+      <label>일자<input type="date" id="dvDate"></label>
+      <label>티커<input type="text" id="dvTicker" list="tklist" placeholder="005930" style="width:110px"></label>
+      <label>세후 수령액<input type="number" id="dvAmount" min="0" step="any" placeholder="14440"></label>
+      <label>통화<select id="dvCcy"><option value="KRW">KRW</option><option value="USD">USD</option></select></label>
+      <label>계좌<input type="text" id="dvAccount" list="acctlist" placeholder="기본" style="width:100px"></label>
+      <button class="primary" id="btnAddDv" style="align-self:flex-end">+ 추가</button>
+      <span class="de-msg" id="dvMsg"></span>
+    </div>
+    <div class="de-list"><div id="dvListWrap"></div></div>
+  </div>
+  <!-- 액면분할 -->
+  <div id="paneSp" style="display:none">
+    <div class="de-form">
+      <label>일자<input type="date" id="spDate"></label>
+      <label>티커<input type="text" id="spTicker" list="tklist" placeholder="005930" style="width:110px"></label>
+      <label>비율 (1주→N주)<input type="number" id="spRatio" min="0" step="any" placeholder="10"></label>
+      <button class="primary" id="btnAddSp" style="align-self:flex-end">+ 추가</button>
+      <span class="de-msg" id="spMsg"></span>
+    </div>
+    <p class="cap" style="margin:4px 0 0">예: 1주가 10주로 분할되면 비율 10, 50주가 1주로 병합(역분할)되면 0.02. 분할일 이전 거래의 수량·단가가 자동 조정됩니다.</p>
+    <div class="de-list"><div id="spListWrap"></div></div>
+  </div>
 </div>
+<datalist id="tklist"></datalist>
 
 <h2>데이터 관리 <span class="sub">백업 · 복원 · 초기화</span></h2>
 <div class="card">
@@ -428,6 +495,15 @@ cursor:pointer;color:var(--mut);font-size:14px}
     <button id="btnWipe" class="danger">전체 초기화</button>
   </div>
   <p class="dm-msg" id="dmMsg"></p>
+
+  <!-- 계좌 표시 순서·숨기기 설정 -->
+  <div style="margin-top:18px;border-top:1px solid var(--line);padding-top:14px" id="acctCfgSection">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <span style="font-size:14px;font-weight:600;color:var(--ink)">계좌 표시 설정</span>
+      <span class="cap" style="margin:0;font-size:12.5px">순서 조정(↑↓) · 숨기기(👁) — 거래 데이터는 유지됩니다</span>
+    </div>
+    <div id="acctCfgList"></div>
+  </div>
 
   <!-- 인라인 초기화 확인 패널 (팝업 대신) -->
   <div id="wipePanel" class="wipe-panel" style="display:none">
@@ -532,6 +608,7 @@ cursor:pointer;color:var(--mut);font-size:14px}
     현재가: ['현재가', '종가', '가격'],
     환율값: ['USD/KRW', 'USDKRW', '환율'],
     계좌: ['계좌', '계좌명', 'ACCOUNT', '증권사'],
+    유형: ['유형', '카테고리', 'CATEGORY', '분류', '섹터'],
   };
   function headerIndex(headerRow, key) {
     var cands = ALIAS[key];
@@ -589,17 +666,19 @@ cursor:pointer;color:var(--mut);font-size:14px}
     }
 
     var names = {};
+    var categories = {};  // Excel 거래의 유형 컬럼 → {ticker: 유형}
     var tx = parseSheet('거래내역', {
       date: { col: '일자', req: 1 }, mkt: { col: '시장', req: 1 }, ticker: { col: '티커', req: 1 },
       name: { col: '종목명', req: 0 }, side: { col: '구분', req: 1 }, qty: { col: '수량', req: 1 },
       price: { col: '단가', req: 1 }, fee: { col: '수수료', req: 0 }, fxRate: { col: '체결환율', req: 0 },
-      account: { col: '계좌', req: 0 },
+      account: { col: '계좌', req: 0 }, category: { col: '유형', req: 0 },
     }, true).map(function (r) {
       var date = toISO(r.date), mkt = String(r.mkt || '').trim().toUpperCase();
       var side = String(r.side || '').trim();
       var ticker = normTicker(r.ticker, mkt);
       var qty = toNum(r.qty), price = toNum(r.price), fee = toNum(r.fee) || 0, fx = toNum(r.fxRate);
       var account = String(r.account || '').trim() || '기본';
+      var category = String(r.category || '').trim();
       if (!date) errors.push('거래내역 ' + r._row + '행: 일자 형식 오류');
       if (mkt !== 'KR' && mkt !== 'US') errors.push('거래내역 ' + r._row + '행: 시장은 KR 또는 US');
       if (side !== '매수' && side !== '매도') errors.push('거래내역 ' + r._row + '행: 구분은 매수/매도');
@@ -607,6 +686,8 @@ cursor:pointer;color:var(--mut);font-size:14px}
       if (!(qty > 0)) errors.push('거래내역 ' + r._row + '행: 수량은 양수');
       if (!(price > 0)) errors.push('거래내역 ' + r._row + '행: 단가는 양수');
       if (ticker && r.name) names[ticker] = String(r.name).trim();
+      // 유형이 적혀 있으면 종목→유형 맵에 수집 (나중 거래가 우선)
+      if (ticker && category) categories[ticker] = category;
       return { date: date, mkt: mkt, ticker: ticker, side: side, qty: qty || 0, price: price || 0, fee: fee, fxRate: fx, account: account };
     });
 
@@ -672,7 +753,8 @@ cursor:pointer;color:var(--mut);font-size:14px}
     return {
       errors: [], warnings: warnings,
       data: { tx: tx, flows: flows, divs: divs, splits: splits,
-              snapshot: { asof: asof, prices: prices }, fx: fx, names: names },
+              snapshot: { asof: asof, prices: prices }, fx: fx, names: names,
+              categories: categories },
     };
   }
 
@@ -1024,12 +1106,206 @@ cursor:pointer;color:var(--mut);font-size:14px}
     return { deposits: dep, withdrawals: wd, net: dep - wd, realized: rz, dividends: dv };
   }
 
+
+  /* ── 가격 히스토리 기반 기간 수익률 (TWR / MWR) ──
+     history: { tickers:{tk:{mkt,prices:{date:px}}}, fx:{date:rate} }
+     임의 날짜의 평가액·총수익 TWR·기간 MWR을 계산. */
+
+  // 히스토리에서 특정 날짜(또는 직전 거래일)의 종가/환율 조회기
+  function makeHistLookup(history) {
+    var fxDates = Object.keys((history && history.fx) || {}).sort();
+    function asofVal(map, sortedKeys, d) {
+      // d 또는 그 이전 가장 가까운 날짜의 값
+      if (!sortedKeys.length) return null;
+      var best = null;
+      // 이진탐색 대신 선형(날짜 적당량) — 역순 탐색이 더 빠름
+      for (var i = sortedKeys.length - 1; i >= 0; i--) {
+        if (sortedKeys[i] <= d) { best = map[sortedKeys[i]]; break; }
+      }
+      return best;
+    }
+    var tkCache = {};
+    function tickerKeys(tk) {
+      if (!tkCache[tk]) {
+        var pm = (history.tickers[tk] && history.tickers[tk].prices) || {};
+        tkCache[tk] = { map: pm, keys: Object.keys(pm).sort() };
+      }
+      return tkCache[tk];
+    }
+    return {
+      fxAt: function (d) { return asofVal(history.fx, fxDates, d); },
+      pxAt: function (tk, d) { var c = tickerKeys(tk); return asofVal(c.map, c.keys, d); },
+      hasTicker: function (tk) { return !!(history.tickers && history.tickers[tk]); },
+      mkt: function (tk) { return history.tickers[tk] && history.tickers[tk].mkt; },
+    };
+  }
+
+  // D 시점까지 거래로 보유한 수량 (분할조정된 거래 사용)
+  function positionsAsOf(atx, dateISO, exclusiveSameDay) {
+    // exclusiveSameDay=true: dateISO 당일 거래는 제외(거래 직전 보유)
+    var pos = {};
+    atx.forEach(function (t) {
+      if (exclusiveSameDay ? (t.date >= dateISO) : (t.date > dateISO)) return;
+      var p = pos[t.ticker] || (pos[t.ticker] = { mkt: t.mkt, qty: 0 });
+      p.qty += (t.side === '매수' ? t.qty : -t.qty);
+    });
+    return pos;
+  }
+
+  // D 시점 포트폴리오 평가액(KRW). 시세 없으면 해당 종목 제외(부분).
+  function portfolioValueAsOf(atx, dateISO, H, exclusiveSameDay) {
+    var pos = positionsAsOf(atx, dateISO, exclusiveSameDay);
+    var total = 0, missing = [];
+    for (var tk in pos) {
+      var q = pos[tk];
+      if (q.qty <= 1e-9) continue;
+      var px = H.pxAt(tk, dateISO);
+      if (px == null) { missing.push(tk); continue; }
+      if (q.mkt === 'US') {
+        var fx = H.fxAt(dateISO);
+        if (fx == null) { missing.push(tk); continue; }
+        total += q.qty * px * fx;
+      } else {
+        total += q.qty * px;
+      }
+    }
+    return { value: total, missing: missing };
+  }
+
+  // 순입금(KRW)을 날짜별로 집계 (입금 +, 출금 −). 배당은 외부현금흐름 아님(내부수익).
+  function flowByDate(srcFlows, fxAt) {
+    var m = {};
+    srcFlows.forEach(function (fl) {
+      var krw = fl.ccy === 'USD' ? fl.amount * (fxAt(fl.date) || 0) : fl.amount;
+      var signed = (fl.kind === '입금' ? krw : -krw);
+      m[fl.date] = (m[fl.date] || 0) + signed;
+    });
+    return m;
+  }
+
+  /* 기간 수익률 메인 계산
+     opts: { start, end, account }
+     - TWR: 외부현금흐름(입출금) 시점마다 구간을 끊어 각 구간 수익률 연결.
+            배당은 평가액에 더해 총수익 반영(받은 날 현금처럼 가치에 산입).
+     - MWR: 시작 평가액을 초기 유출, 입출금을 그대로, 종료 평가액을 회수로 본 XIRR. */
+  function periodReturns(data, history, opts) {
+    opts = opts || {};
+    var account = opts.account || null;
+    var H = makeHistLookup(history);
+
+    // 계좌 필터 + 분할조정
+    var srcTx = data.tx, srcFlows = data.flows, srcDivs = data.divs || [];
+    if (account) {
+      srcTx = srcTx.filter(function (t) { return (t.account || '기본') === account; });
+      srcFlows = srcFlows.filter(function (f) { return (f.account || '기본') === account; });
+      srcDivs = srcDivs.filter(function (d) { return (d.account || '기본') === account; });
+    }
+    var atx = adjustSplits(srcTx, data.splits || []).slice().sort(function (a, b) {
+      return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+    });
+
+    // 기간 경계
+    var allDates = atx.map(function (t) { return t.date; })
+      .concat(srcFlows.map(function (f) { return f.date; }));
+    var minTx = allDates.length ? allDates.slice().sort()[0] : null;
+    var start = opts.start || minTx;
+    var end = opts.end || history.end || (function () {
+      var d = new Date(); function p(n){return (n<10?'0':'')+n;}
+      return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+    })();
+    if (!start) return { error: '거래가 없습니다.' };
+    if (start > end) return { error: '시작일이 종료일보다 늦습니다.' };
+
+    // 외부 현금흐름(입출금) 날짜들 — 기간 내
+    var flowMap = flowByDate(srcFlows, H.fxAt);
+    var flowDates = Object.keys(flowMap).filter(function (d) { return d > start && d <= end; }).sort();
+
+    // 배당(총수익 반영): 기간 내 배당을 날짜별 KRW로
+    var divMap = {};
+    srcDivs.forEach(function (d) {
+      if (d.date <= start || d.date > end) return;
+      var krw = d.ccy === 'USD' ? d.amount * (H.fxAt(d.date) || 0) : d.amount;
+      divMap[d.date] = (divMap[d.date] || 0) + krw;
+    });
+
+    // 평가액 헬퍼: pvBefore = 당일 거래 직전, pvAfter = 당일 거래 직후
+    function pvBefore(d) { return portfolioValueAsOf(atx, d, H, true); }
+    function pvAfter(d) { return portfolioValueAsOf(atx, d, H, false); }
+
+    var v0 = pvAfter(start);   // 시작일: 그날 거래 반영된 보유로 시작
+    var vEnd = pvAfter(end);   // 종료일: 그날까지 모든 거래 반영
+    var missingAll = {};
+    v0.missing.concat(vEnd.missing).forEach(function (t) { missingAll[t] = 1; });
+
+    // ── TWR ── 구간: start → 각 flowDate → end
+    // 각 구간: 기초 = 구간시작일 거래직후 평가액(입출금 포함),
+    //          기말 = 구간종료일 거래직전 평가액(+ 구간내 배당)
+    // 단, 마지막 구간의 기말은 end일 거래직후(전체 종료 평가액).
+    var breakpoints = [start].concat(flowDates);
+    var twrFactors = [];
+    var twrSegments = [];
+    for (var i = 0; i < breakpoints.length; i++) {
+      var segStart = breakpoints[i];
+      var isLast = (i + 1 >= breakpoints.length);
+      var segEnd = isLast ? end : breakpoints[i + 1];
+      // 기초: 구간시작일 거래 직후 평가액 (입출금은 그 시점에 이미 반영된 현금/주식)
+      var base = (i === 0) ? v0.value : pvAfter(segStart).value;
+      // 기말: 마지막 구간은 end 거래직후, 중간 구간은 다음 경계일 거래직전
+      var vEndSeg = isLast ? vEnd.value : pvBefore(segEnd).value;
+      // 구간 내 배당 합 (segStart < d <= segEnd)
+      var segDiv = 0;
+      Object.keys(divMap).forEach(function (d) {
+        if (d > segStart && d <= segEnd) segDiv += divMap[d];
+      });
+      if (base > 1e-6) {
+        var r = (vEndSeg + segDiv) / base - 1;
+        twrFactors.push(1 + r);
+        twrSegments.push({ from: segStart, to: segEnd, base: base, end: vEndSeg, div: segDiv, ret: r });
+      } else {
+        twrSegments.push({ from: segStart, to: segEnd, base: base, end: vEndSeg, div: segDiv, ret: null, skipped: true });
+      }
+    }
+    var twrTotal = twrFactors.reduce(function (a, f) { return a * f; }, 1) - 1;
+
+    // 연환산 TWR
+    var spanDays = days(start, end);
+    var twrAnnual = (spanDays > 0 && twrFactors.length) ? Math.pow(1 + twrTotal, 365 / spanDays) - 1 : null;
+
+    // ── MWR (XIRR) ── 시작평가 유출, 입출금, 배당(현금수령), 종료평가 회수
+    var cfs = [];
+    cfs.push([start, -v0.value]); // 기초 평가액을 초기 투자로
+    srcFlows.forEach(function (fl) {
+      if (fl.date > start && fl.date <= end) {
+        var krw = fl.ccy === 'USD' ? fl.amount * (H.fxAt(fl.date) || 0) : fl.amount;
+        cfs.push([fl.date, fl.kind === '입금' ? -krw : krw]); // 입금=유출(−), 출금=회수(+)
+      }
+    });
+    // 배당은 현금 회수(+)로 — 총수익 일관성
+    Object.keys(divMap).forEach(function (d) { cfs.push([d, divMap[d]]); });
+    cfs.push([end, vEnd.value]); // 기말 평가액 회수
+    cfs.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; });
+    var mwr = xirr(cfs);
+
+    return {
+      start: start, end: end,
+      startValue: v0.value, endValue: vEnd.value,
+      twr: twrTotal, twrAnnual: twrAnnual, twrSegments: twrSegments,
+      mwr: mwr,
+      netFlow: flowDates.reduce(function (a, d) { return a + flowMap[d]; }, 0),
+      dividends: Object.keys(divMap).reduce(function (a, d) { return a + divMap[d]; }, 0),
+      missingTickers: Object.keys(missingAll),
+      hasMissing: Object.keys(missingAll).length > 0,
+    };
+  }
+
   return { toNum: toNum, toISO: toISO, days: days, normTicker: normTicker,
            normalizeWorkbook: normalizeWorkbook, compute: compute, xirr: xirr,
            investedSeries: investedSeries, flowBins: flowBins, periodStats: periodStats,
            makeFxLookup: makeFxLookup, adjustSplits: adjustSplits,
            categoryStats: categoryStats, contributions: contributions, rebalance: rebalance,
-           listAccounts: listAccounts };
+           listAccounts: listAccounts,
+           makeHistLookup: makeHistLookup, portfolioValueAsOf: portfolioValueAsOf,
+           positionsAsOf: positionsAsOf, periodReturns: periodReturns };
 });
 
 </script>
@@ -1591,20 +1867,22 @@ var SAMPLE = {
 var E = window.Engine;
 
 /* ── localStorage ── */
-var LS = { cat:'amd_cat', tx:'amd_tx', fl:'amd_fl', tgt:'amd_tgt', gh:'amd_gh_url', zoom:'amd_zoom' };
+var LS = { cat:'amd_cat', tx:'amd_tx', fl:'amd_fl', dv:'amd_dv', sp:'amd_sp', tgt:'amd_tgt', gh:'amd_gh_url', zoom:'amd_zoom', acctCfg:'amd_acct_cfg' };
 function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } }
 function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 
 /* ── 상태 ── */
 var state = {
   base: null,
-  manual: { tx: lsGet(LS.tx)||[], flows: lsGet(LS.fl)||[] },
+  manual: { tx: lsGet(LS.tx)||[], flows: lsGet(LS.fl)||[], divs: lsGet(LS.dv)||[], splits: lsGet(LS.sp)||[] },
   categories: lsGet(LS.cat)||{},
   targets: lsGet(LS.tgt)||{},
   result: null, view:'ticker', inclCash:true, period:'all',
   account: null,  // null = 전체 합산
   charts:{}, extraWarnings:[],
-  editingTxIdx:null, editingFlIdx:null
+  editingTxIdx:null, editingFlIdx:null, editingDvIdx:null, editingSpIdx:null,
+  acctCfg: lsGet('amd_acct_cfg') || { order:[], hidden:[] }, // {order:[...], hidden:[...]}
+  history:null, prPeriod:'all', prStart:null
 };
 var bootWarnings = [];
 
@@ -1632,6 +1910,15 @@ function updateCatDatalist(){
   if(!dl) return;
   dl.innerHTML=catList().map(function(c){ return '<option value="'+c.replace(/"/g,'&quot;')+'">'; }).join('');
 }
+function updateTkDatalist(){
+  var dl=document.getElementById('tklist');
+  if(!dl) return;
+  var d=currentData();
+  var set={};
+  (d.tx||[]).forEach(function(t){ if(t.ticker) set[t.ticker]=t.name||t.ticker; });
+  dl.innerHTML=Object.keys(set).sort().map(function(tk){
+    return '<option value="'+tk+'">'+(set[tk]!==tk?set[tk]:'')+'</option>'; }).join('');
+}
 function updateAcctDatalist(){
   var dl=document.getElementById('acctlist');
   if(!dl) return;
@@ -1656,7 +1943,9 @@ function currentData(){
   return {
     tx: b.tx.concat(state.manual.tx).sort(function(a,x){ return a.date<x.date?-1:1; }),
     flows: b.flows.concat(state.manual.flows).sort(function(a,x){ return a.date<x.date?-1:1; }),
-    divs: b.divs, splits: b.splits, snapshot: b.snapshot, fx: b.fx, names: names
+    divs: (b.divs||[]).concat(state.manual.divs||[]).sort(function(a,x){ return a.date<x.date?-1:1; }),
+    splits: (b.splits||[]).concat(state.manual.splits||[]).sort(function(a,x){ return a.date<x.date?-1:1; }),
+    snapshot: b.snapshot, fx: b.fx, names: names
   };
 }
 
@@ -1704,14 +1993,30 @@ function showMessages(errors,warnings){
 function setStatus(t){ el('status').textContent=t; }
 
 /* ── 렌더 ── */
+// 계좌 설정 적용: 숨기기 제외 + 사용자 지정 순서
+function sortFilterAccts(accts){
+  var cfg=state.acctCfg||{order:[],hidden:[]};
+  var hidden=cfg.hidden||[], order=cfg.order||[];
+  var visible=accts.filter(function(a){ return hidden.indexOf(a)<0; });
+  visible.sort(function(a,b){
+    var ia=order.indexOf(a), ib=order.indexOf(b);
+    if(ia<0&&ib<0) return a<b?-1:1;
+    if(ia<0) return 1;
+    if(ib<0) return -1;
+    return ia-ib;
+  });
+  return visible;
+}
+function saveAcctCfg(){ lsSet(LS.acctCfg, state.acctCfg); }
 function renderAccountBar(){
   var d=currentData();
-  var accts=E.listAccounts(d);
+  var allAccts=E.listAccounts(d);
+  var accts=sortFilterAccts(allAccts);
   var bar=el('acctBar');
   // 계좌가 '기본' 하나뿐이면 셀렉터 숨김
-  if(accts.length<=1 && accts[0]==='기본'){ bar.style.display='none'; state.account=null; return; }
+  if(accts.length<=1 && (accts[0]==='기본'||accts.length===0)){ bar.style.display='none'; state.account=null; return; }
   bar.style.display='flex';
-  // 선택값 유효성 검사
+  // 선택값 유효성 검사 (숨겨진 계좌 선택 중이면 전체로)
   if(state.account && accts.indexOf(state.account)<0) state.account=null;
   var html='<span class="acct-chip'+(state.account===null?' on':'')+'" data-acct="">전체 합산</span>';
   accts.forEach(function(a){
@@ -1748,7 +2053,7 @@ function render(){
     // 이전 렌더 잔여물 제거
     var tb=el('holdTable'); if(tb){ var b=tb.querySelector('tbody'); if(b) b.innerHTML=''; }
     var cc=el('catCard'); if(cc) cc.style.display='none';
-    updateCatDatalist(); updateAcctDatalist();
+    updateCatDatalist(); updateAcctDatalist(); updateTkDatalist();
     return;
   }
   showEmptyState(false);
@@ -1783,9 +2088,9 @@ function render(){
   el('kFxEff').textContent=fmtKrwS(r.decomp.fx); el('kFxEff').className='kv '+cls(r.decomp.fx);
   el('kFxEffSub').textContent='평균매수 '+fmtFx(r.avgBuyFx)+' → 현재 '+fmtFx(r.fxNow)+' · 교차항 별도';
 
-  rebuildCatColors();
+  rebuildCatColors(); renderAcctCfg();
   [renderDonut, renderTrend, renderTable, renderCategoryCard, renderRebalance,
-   renderFx, renderDecomp, renderPeriod].forEach(function(fn){
+   renderFx, renderDecomp, renderPeriod, renderPeriodReturns].forEach(function(fn){
     try{ fn(); } catch(e){ console.error('[render]', fn.name, e); }
   });
   updateCatDatalist();
@@ -1880,11 +2185,37 @@ function renderCategoryCard(){
 }
 
 /* ── 리밸런싱 ── */
+// 계좌별 목표비중 헬퍼: state.targets = { 계좌명: {유형:비중} }
+// 전체합산(account=null)은 '__ALL__' 키 미사용 — 리밸런싱은 계좌별만
+function targetsForAccount(){
+  var acc=state.account;
+  if(!acc) return null; // 전체합산이면 목표 없음
+  if(!state.targets || typeof state.targets!=='object') state.targets={};
+  if(!state.targets[acc] || typeof state.targets[acc]!=='object') state.targets[acc]={};
+  return state.targets[acc];
+}
 function renderRebalance(){
   var r=state.result; if(!r) return;
   var cs=E.categoryStats(r, state.categories);
-  if(!cs.anyAssigned){ return; }
-  var rb=E.rebalance(cs, state.targets);
+  var card=el('rebalCard');
+  var guide=el('rebalGuide');
+  var body=el('rebalBody');
+  // 전체 합산: 안내만 표시, 표 숨김
+  if(!state.account){
+    if(guide){ guide.style.display='block'; }
+    if(body){ body.style.display='none'; }
+    return;
+  }
+  if(guide){ guide.style.display='none'; }
+  if(body){ body.style.display='block'; }
+  var lbl=el('rebalAcctLabel'); if(lbl) lbl.textContent=state.account+' 계좌 · 목표 비중';
+  if(!cs.anyAssigned){
+    if(body) body.style.display='none';
+    if(guide){ guide.style.display='block'; guide.textContent='이 계좌에 유형이 지정된 보유 종목이 없습니다. 거래의 유형을 입력하면 리밸런싱을 설정할 수 있습니다.'; }
+    return;
+  }
+  var acctTargets=targetsForAccount();
+  var rb=E.rebalance(cs, acctTargets);
   var tbody=el('rebalTable').querySelector('tbody');
   tbody.innerHTML=rb.rows.map(function(row){
     var dot='<span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:'+
@@ -1923,8 +2254,10 @@ function renderRebalance(){
   tbody.querySelectorAll('.tw-inp').forEach(function(inp){
     inp.addEventListener('change',function(){
       var cat=inp.dataset.cat, v=parseFloat(inp.value);
-      if(isNaN(v)||v<0){ delete state.targets[cat]; }
-      else { state.targets[cat]=v/100; }
+      var t=targetsForAccount();
+      if(!t) return;
+      if(isNaN(v)||v<0){ delete t[cat]; }
+      else { t[cat]=v/100; }
       lsSet(LS.tgt, state.targets);
       renderRebalance();
     });
@@ -2062,6 +2395,99 @@ function renderPeriod(){
         y:{stacked:true,ticks:{callback:function(v){ return fmtKrw(v); }},grid:{color:C.grid}}}}});
   el('periodNote').textContent='구간 시작 '+s+' · 구간 수익률(%)은 가격히스토리 연동 단계에서 활성화 예정';
 }
+
+
+/* ── 기간 수익률 분석 (TWR/MWR) ── */
+function applyHistory(j, label){
+  if(!j || !j.tickers){ showMessages(['history.json 형식 오류: tickers가 없습니다.'],[]); return; }
+  state.history=j;
+  el('prNoHist').style.display='none';
+  el('prBody').style.display='block';
+  setStatus('가격 히스토리 로드: '+label+' (기간 '+(j.start||'?')+' ~ '+(j.end||'?')+')');
+  renderPeriodReturns();
+}
+function loadHistoryFile(file){
+  var rd=new FileReader();
+  rd.onload=function(e){
+    try{ applyHistory(JSON.parse(e.target.result),'파일'); }
+    catch(err){ showMessages(['history.json을 읽지 못했습니다: '+err.message],[]); }
+  };
+  rd.readAsText(file);
+}
+// GitHub prices.json URL에서 history.json URL 추정
+function historyUrlFromGh(){
+  var u=lsGet(LS.gh)||'';
+  if(!u) return null;
+  return u.replace(/prices\.json(\?.*)?$/, 'history.json');
+}
+function tryAutoLoadHistory(){
+  var base=historyUrlFromGh();
+  if(!base || state.history) return;
+  var jUrl=(typeof toJsDelivr==='function')?toJsDelivr(base):null;
+  var targets=[]; if(jUrl) targets.push(jUrl); targets.push(base);
+  var i=0;
+  function next(){
+    if(i>=targets.length) return; // 조용히 실패 (수동 버튼 있음)
+    var u=targets[i++]+(targets[i-1].indexOf('?')>=0?'&':'?')+'_t='+Date.now();
+    fetch(u,{cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(j){ applyHistory(j,'GitHub'); }).catch(function(){ next(); });
+  }
+  next();
+}
+function prPeriodStart(){
+  var r=state.result; if(!r) return null;
+  var end=r.asof;
+  var p=state.prPeriod;
+  if(p==='all') return null; // 전체 = 최초 거래일
+  if(p==='custom') return state.prStart||null;
+  var d=new Date(end+'T00:00:00');
+  if(p==='ytd') return end.slice(0,4)+'-01-01';
+  if(p==='1y'){ d.setFullYear(d.getFullYear()-1); }
+  if(p==='3y'){ d.setFullYear(d.getFullYear()-3); }
+  function pad(n){return (n<10?'0':'')+n;}
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+function renderPeriodReturns(){
+  if(!state.history){ return; }
+  var d=currentData();
+  var start=prPeriodStart();
+  var opts={ account: state.account||null };
+  if(start) opts.start=start;
+  var pr;
+  try{ pr=E.periodReturns(d, state.history, opts); }
+  catch(e){ showMessages(['기간 수익률 계산 오류: '+e.message],[]); return; }
+  if(pr.error){ el('prNote').textContent=pr.error; el('prTwr').textContent='—'; el('prMwr').textContent='—'; return; }
+
+  el('prRange').textContent='('+pr.start+' ~ '+pr.end+')';
+  el('prTwr').textContent=pr.twr==null?'—':fmtPct(pr.twr,true);
+  el('prTwr').className='kv '+(pr.twr==null?'':cls(pr.twr));
+  el('prTwrAnn').textContent=pr.twrAnnual==null?'':('연환산 '+fmtPct(pr.twrAnnual,true));
+  el('prMwr').textContent=pr.mwr==null?'—':fmtPct(pr.mwr,true);
+  el('prMwr').className='kv '+(pr.mwr==null?'':cls(pr.mwr));
+  var gap=(pr.mwr!=null&&pr.twr!=null)?(pr.mwr-pr.twr):null;
+  el('prGap').textContent=gap==null?'—':fmtPct(gap,true);
+  el('prGap').className='kv '+(gap==null?'':cls(gap));
+  el('prDiv').textContent=fmtKrw(pr.dividends);
+
+  // 구간별 TWR 막대
+  var segs=pr.twrSegments.filter(function(s){ return s.ret!=null; });
+  if(segs.length && typeof makeChart==='function'){
+    makeChart('cTwrSeg',{type:'bar',
+      data:{labels:segs.map(function(s){ return s.from.slice(2)+'~'+s.to.slice(5); }),
+        datasets:[{label:'구간 수익률',data:segs.map(function(s){ return (s.ret*100); }),
+          backgroundColor:segs.map(function(s){ return s.ret>=0?C.coral:C.blueM; }),borderRadius:5}]},
+      options:{maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){ return ' '+c.parsed.y.toFixed(2)+'%'; }}}},
+        scales:{x:{grid:{display:false},ticks:{maxRotation:0,font:{size:10}}},
+          y:{grid:{color:C.grid},ticks:{callback:function(v){ return v+'%'; }}}}}});
+  }
+
+  var notes=[];
+  if(pr.hasMissing) notes.push('시세 누락 종목('+pr.missingTickers.join(', ')+')은 평가에서 제외됨 — 히스토리 백필을 확인해 주세요.');
+  notes.push('TWR은 운용 실력(입출금 타이밍 무관), MWR은 실제 자산 증가율입니다. 효과(MWR−TWR)가 양수면 자금 투입 타이밍이 성과에 기여했다는 의미입니다.');
+  el('prNote').textContent=notes.join(' ');
+}
+
 
 /* ── 수동 입력 목록 렌더 ── */
 /* ── 수동 입력 목록 렌더 (편집 모드 포함) ── */
@@ -2328,6 +2754,188 @@ function addFlRow(){
   msg.style.color=''; msg.textContent='추가되었습니다 · '+kind+' '+amount.toLocaleString()+' '+ccy;
   el('flAmount').value=''; el('flMemo').value=''; el('flAmount').focus();
 }
+
+function addDvRow(){
+  var date=el('dvDate').value;
+  var ticker=el('dvTicker').value.trim().toUpperCase();
+  var amount=parseFloat(el('dvAmount').value);
+  var ccy=el('dvCcy').value;
+  var account=el('dvAccount').value.trim()||'기본';
+  var msg=el('dvMsg'); msg.className='de-msg'; msg.textContent='';
+  if(!date){ msg.textContent='일자를 입력해 주세요.'; return; }
+  if(!ticker){ msg.textContent='티커를 입력해 주세요.'; return; }
+  if(!(amount>0)){ msg.textContent='수령액은 양수여야 합니다.'; return; }
+  if(ccy==='KRW'){ var dg=ticker.replace(/\D/g,''); if(dg) ticker=dg.padStart(6,'0'); }
+  state.manual.divs.push({date:date,ticker:ticker,amount:amount,ccy:ccy,account:account});
+  lsSet(LS.dv,state.manual.divs);
+  renderManualDvList(); render();
+  msg.style.color=''; msg.textContent='추가되었습니다 · '+ticker+' '+amount.toLocaleString()+' '+ccy;
+  el('dvAmount').value=''; el('dvTicker').value=''; el('dvTicker').focus();
+}
+function renderManualDvList(){
+  var list=state.manual.divs;
+  var wrap=el('dvListWrap');
+  if(!list.length){ state.editingDvIdx=null; wrap.innerHTML='<div class="de-empty">수동 입력 배당 내역이 없습니다.</div>'; return; }
+  var rows=list.map(function(v,i){
+    var editing=(state.editingDvIdx===i);
+    if(editing){
+      return '<tr class="de-edit-row"><td colspan="6">'+
+        '<div class="de-edit-form">'+
+        '<label>일자<input class="eif" id="edvDate" type="date" value="'+v.date+'"></label>'+
+        '<label>티커<input class="eif" id="edvTicker" type="text" value="'+v.ticker+'" style="width:100px"></label>'+
+        '<label>세후 수령액<input class="eif" id="edvAmount" type="number" min="0" step="any" value="'+v.amount+'"></label>'+
+        '<label>통화<select class="eif" id="edvCcy"><option'+(v.ccy==='KRW'?' selected':'')+' value="KRW">KRW</option>'+
+          '<option'+(v.ccy==='USD'?' selected':'')+' value="USD">USD</option></select></label>'+
+        '<label>계좌<input class="eif" id="edvAccount" type="text" list="acctlist" value="'+(v.account||'기본')+'" style="width:90px"></label>'+
+        '<div class="de-edit-btns">'+
+          '<button class="primary de-save" data-di="'+i+'">저장</button>'+
+          '<button class="de-cancel" data-di="'+i+'">취소</button>'+
+        '</div><span class="de-msg" id="edvMsg"></span>'+
+        '</div></td></tr>';
+    }
+    return '<tr class="de-list-row" data-di="'+i+'">'+
+      '<td>'+v.date+'</td>'+
+      '<td class="left">'+v.ticker+'</td>'+
+      '<td>'+v.amount.toLocaleString()+'</td><td>'+v.ccy+'</td>'+
+      '<td class="left">'+(v.account||'기본')+'</td>'+
+      '<td class="de-actions">'+
+        '<button class="de-edit-btn" data-di="'+i+'" title="수정">✎</button>'+
+        '<button class="de-del" data-di="'+i+'" title="삭제">✕</button>'+
+      '</td></tr>';
+  }).join('');
+  wrap.innerHTML='<p class="de-cnt">배당 총 '+list.length+'건 <span style="font-size:12.5px;font-weight:400;color:var(--faint)">· 행 클릭 또는 ✎ 수정</span></p>'+
+    '<table class="de-list-table"><thead><tr>'+
+    '<th>일자</th><th class="left">티커</th><th>세후 수령액</th><th>통화</th><th class="left">계좌</th><th></th>'+
+    '</tr></thead><tbody>'+rows+'</tbody></table>';
+  wrap.querySelectorAll('.de-del').forEach(function(btn){
+    btn.addEventListener('click',function(e){ e.stopPropagation(); deleteManualDv(+btn.dataset.di); });
+  });
+  wrap.querySelectorAll('.de-edit-btn').forEach(function(btn){
+    btn.addEventListener('click',function(e){ e.stopPropagation(); startEditDv(+btn.dataset.di); });
+  });
+  wrap.querySelectorAll('.de-list-row').forEach(function(row){
+    row.addEventListener('click',function(){ startEditDv(+row.dataset.di); });
+  });
+  wrap.querySelectorAll('.de-save').forEach(function(btn){
+    btn.addEventListener('click',function(){ saveDvEdit(+btn.dataset.di); });
+  });
+  wrap.querySelectorAll('.de-cancel').forEach(function(btn){
+    btn.addEventListener('click',function(){ state.editingDvIdx=null; renderManualDvList(); });
+  });
+}
+function deleteManualDv(i){
+  if(state.editingDvIdx===i) state.editingDvIdx=null;
+  state.manual.divs.splice(i,1); lsSet(LS.dv,state.manual.divs); renderManualDvList(); render();
+}
+function startEditDv(i){
+  state.editingDvIdx = (state.editingDvIdx===i) ? null : i;
+  state.editingTxIdx=null; state.editingFlIdx=null;
+  renderManualDvList();
+}
+function saveDvEdit(i){
+  var date=document.getElementById('edvDate').value;
+  var ticker=document.getElementById('edvTicker').value.trim().toUpperCase();
+  var amount=parseFloat(document.getElementById('edvAmount').value);
+  var ccy=document.getElementById('edvCcy').value;
+  var account=document.getElementById('edvAccount').value.trim()||'기본';
+  var msg=document.getElementById('edvMsg');
+  if(!date){ if(msg) msg.textContent='일자를 입력해 주세요.'; return; }
+  if(!ticker){ if(msg) msg.textContent='티커를 입력해 주세요.'; return; }
+  if(!(amount>0)){ if(msg) msg.textContent='수령액은 양수여야 합니다.'; return; }
+  if(ccy==='KRW'){ var dg=ticker.replace(/\D/g,''); if(dg) ticker=dg.padStart(6,'0'); }
+  state.manual.divs[i]={date:date,ticker:ticker,amount:amount,ccy:ccy,account:account};
+  lsSet(LS.dv,state.manual.divs);
+  state.editingDvIdx=null;
+  renderManualDvList(); render();
+}
+
+function addSpRow(){
+  var date=el('spDate').value;
+  var ticker=el('spTicker').value.trim().toUpperCase();
+  var ratio=parseFloat(el('spRatio').value);
+  var msg=el('spMsg'); msg.className='de-msg'; msg.textContent='';
+  if(!date){ msg.textContent='일자를 입력해 주세요.'; return; }
+  if(!ticker){ msg.textContent='티커를 입력해 주세요.'; return; }
+  if(!(ratio>0)){ msg.textContent='비율은 양수여야 합니다 (예: 10 또는 0.02).'; return; }
+  var dg=ticker.replace(/\D/g,''); if(dg && dg.length<=6) ticker=dg.padStart(6,'0');
+  state.manual.splits.push({date:date,ticker:ticker,ratio:ratio});
+  lsSet(LS.sp,state.manual.splits);
+  renderManualSpList(); render();
+  msg.style.color=''; msg.textContent='추가되었습니다 · '+ticker+' 1→'+ratio;
+  el('spRatio').value=''; el('spTicker').value=''; el('spTicker').focus();
+}
+function renderManualSpList(){
+  var list=state.manual.splits;
+  var wrap=el('spListWrap');
+  if(!list.length){ state.editingSpIdx=null; wrap.innerHTML='<div class="de-empty">수동 입력 분할 내역이 없습니다.</div>'; return; }
+  var rows=list.map(function(v,i){
+    var editing=(state.editingSpIdx===i);
+    if(editing){
+      return '<tr class="de-edit-row"><td colspan="4">'+
+        '<div class="de-edit-form">'+
+        '<label>일자<input class="eif" id="espDate" type="date" value="'+v.date+'"></label>'+
+        '<label>티커<input class="eif" id="espTicker" type="text" value="'+v.ticker+'" style="width:100px"></label>'+
+        '<label>비율 (1주→N주)<input class="eif" id="espRatio" type="number" min="0" step="any" value="'+v.ratio+'"></label>'+
+        '<div class="de-edit-btns">'+
+          '<button class="primary de-save" data-di="'+i+'">저장</button>'+
+          '<button class="de-cancel" data-di="'+i+'">취소</button>'+
+        '</div><span class="de-msg" id="espMsg"></span>'+
+        '</div></td></tr>';
+    }
+    return '<tr class="de-list-row" data-di="'+i+'">'+
+      '<td>'+v.date+'</td>'+
+      '<td class="left">'+v.ticker+'</td>'+
+      '<td>1 → '+v.ratio+'</td>'+
+      '<td class="de-actions">'+
+        '<button class="de-edit-btn" data-di="'+i+'" title="수정">✎</button>'+
+        '<button class="de-del" data-di="'+i+'" title="삭제">✕</button>'+
+      '</td></tr>';
+  }).join('');
+  wrap.innerHTML='<p class="de-cnt">분할 총 '+list.length+'건 <span style="font-size:12.5px;font-weight:400;color:var(--faint)">· 행 클릭 또는 ✎ 수정</span></p>'+
+    '<table class="de-list-table"><thead><tr>'+
+    '<th>일자</th><th class="left">티커</th><th>비율</th><th></th>'+
+    '</tr></thead><tbody>'+rows+'</tbody></table>';
+  wrap.querySelectorAll('.de-del').forEach(function(btn){
+    btn.addEventListener('click',function(e){ e.stopPropagation(); deleteManualSp(+btn.dataset.di); });
+  });
+  wrap.querySelectorAll('.de-edit-btn').forEach(function(btn){
+    btn.addEventListener('click',function(e){ e.stopPropagation(); startEditSp(+btn.dataset.di); });
+  });
+  wrap.querySelectorAll('.de-list-row').forEach(function(row){
+    row.addEventListener('click',function(){ startEditSp(+row.dataset.di); });
+  });
+  wrap.querySelectorAll('.de-save').forEach(function(btn){
+    btn.addEventListener('click',function(){ saveSpEdit(+btn.dataset.di); });
+  });
+  wrap.querySelectorAll('.de-cancel').forEach(function(btn){
+    btn.addEventListener('click',function(){ state.editingSpIdx=null; renderManualSpList(); });
+  });
+}
+function deleteManualSp(i){
+  if(state.editingSpIdx===i) state.editingSpIdx=null;
+  state.manual.splits.splice(i,1); lsSet(LS.sp,state.manual.splits); renderManualSpList(); render();
+}
+function startEditSp(i){
+  state.editingSpIdx = (state.editingSpIdx===i) ? null : i;
+  state.editingTxIdx=null; state.editingFlIdx=null; state.editingDvIdx=null;
+  renderManualSpList();
+}
+function saveSpEdit(i){
+  var date=document.getElementById('espDate').value;
+  var ticker=document.getElementById('espTicker').value.trim().toUpperCase();
+  var ratio=parseFloat(document.getElementById('espRatio').value);
+  var msg=document.getElementById('espMsg');
+  if(!date){ if(msg) msg.textContent='일자를 입력해 주세요.'; return; }
+  if(!ticker){ if(msg) msg.textContent='티커를 입력해 주세요.'; return; }
+  if(!(ratio>0)){ if(msg) msg.textContent='비율은 양수여야 합니다.'; return; }
+  var dg=ticker.replace(/\D/g,''); if(dg && dg.length<=6) ticker=dg.padStart(6,'0');
+  state.manual.splits[i]={date:date,ticker:ticker,ratio:ratio};
+  lsSet(LS.sp,state.manual.splits);
+  state.editingSpIdx=null;
+  renderManualSpList(); render();
+}
+
+
 // 티커 입력 시 기존 종목명 자동완성
 function autofillName(){
   var tk=el('txTicker').value.trim().toUpperCase();
@@ -2384,8 +2992,8 @@ function exportExcel(){
   function aoa(headers,rows){ return XLSX.utils.aoa_to_sheet([headers].concat(rows)); }
   var wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, aoa(
-    ['일자','시장','티커','종목명','구분','수량','단가','수수료·제세금','체결환율','계좌'],
-    d.tx.map(function(t){ return [t.date,t.mkt,t.ticker,(d.names&&d.names[t.ticker])||t.name||'',t.side,t.qty,t.price,t.fee||0,t.fxRate||'',t.account||'']; })
+    ['일자','시장','티커','종목명','구분','수량','단가','수수료·제세금','체결환율','계좌','유형'],
+    d.tx.map(function(t){ return [t.date,t.mkt,t.ticker,(d.names&&d.names[t.ticker])||t.name||'',t.side,t.qty,t.price,t.fee||0,t.fxRate||'',t.account||'',state.categories[t.ticker]||'']; })
   ), '거래내역');
   XLSX.utils.book_append_sheet(wb, aoa(
     ['일자','구분','금액','통화','계좌','메모'],
@@ -2412,6 +3020,57 @@ function exportExcel(){
 }
 
 
+
+/* ── 계좌 설정 UI ── */
+function renderAcctCfg(){
+  var wrap=el('acctCfgList'); if(!wrap) return;
+  var allAccts=E.listAccounts(currentData());
+  if(!allAccts.length){ wrap.innerHTML='<p class="cap">계좌가 없습니다.</p>'; return; }
+  var cfg=state.acctCfg; if(!cfg){ cfg={order:[],hidden:[]}; state.acctCfg=cfg; }
+  var order=cfg.order||[], hidden=cfg.hidden||[];
+  // order에 없는 계좌는 뒤에 추가
+  allAccts.forEach(function(a){ if(order.indexOf(a)<0) order.push(a); });
+  // order에 있지만 실제 없어진 계좌 제거
+  cfg.order=order.filter(function(a){ return allAccts.indexOf(a)>=0; });
+  var disp=cfg.order;
+  wrap.innerHTML=disp.map(function(a,i){
+    var isHidden=hidden.indexOf(a)>=0;
+    return '<div class="ac-row'+(isHidden?' ac-hidden':'')+'" data-acct="'+a.replace(/"/g,'&quot;')+'">'+
+      '<span class="ac-name">'+a+'</span>'+
+      '<button class="ac-btn ac-up" data-i="'+i+'" title="위로" '+(i===0?'disabled':'')+'>↑</button>'+
+      '<button class="ac-btn ac-dn" data-i="'+i+'" title="아래로" '+(i===disp.length-1?'disabled':'')+'>↓</button>'+
+      '<button class="ac-btn ac-hide" data-i="'+i+'" title="'+(isHidden?'표시':'숨기기')+'" style="font-size:15px">'+(isHidden?'🚫':'👁')+'</button>'+
+      '</div>';
+  }).join('');
+  wrap.querySelectorAll('.ac-up').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var i=+btn.dataset.i;
+      if(i<=0) return;
+      var tmp=cfg.order[i]; cfg.order[i]=cfg.order[i-1]; cfg.order[i-1]=tmp;
+      saveAcctCfg(); renderAcctCfg(); renderAccountBar();
+    });
+  });
+  wrap.querySelectorAll('.ac-dn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var i=+btn.dataset.i;
+      if(i>=cfg.order.length-1) return;
+      var tmp=cfg.order[i]; cfg.order[i]=cfg.order[i+1]; cfg.order[i+1]=tmp;
+      saveAcctCfg(); renderAcctCfg(); renderAccountBar();
+    });
+  });
+  wrap.querySelectorAll('.ac-hide').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var i=+btn.dataset.i;
+      var a=cfg.order[i];
+      var hi=cfg.hidden.indexOf(a);
+      if(hi>=0) cfg.hidden.splice(hi,1); else cfg.hidden.push(a);
+      // 숨긴 계좌가 현재 선택 중이면 전체로
+      if(state.account===a){ state.account=null; }
+      saveAcctCfg(); renderAcctCfg(); renderAccountBar(); render();
+    });
+  });
+}
+
 /* ── 데이터 관리: 백업 / 복원 / 초기화 ── */
 function dmMsg(text, kind){
   var m=el('dmMsg'); m.className='dm-msg'+(kind?' '+kind:''); m.textContent=text;
@@ -2424,6 +3083,8 @@ function backupData(){
     targets: state.targets,
     manualTx: state.manual.tx,
     manualFlows: state.manual.flows,
+    manualDivs: state.manual.divs,
+    manualSplits: state.manual.splits,
     githubUrl: lsGet(LS.gh)||''
   };
   var blob=new Blob([JSON.stringify(payload,null,1)],{type:'application/json'});
@@ -2448,16 +3109,24 @@ function restoreData(file){
     }
     // 복원: 누락 필드는 빈 값으로 안전 처리
     state.categories = (j.categories && typeof j.categories==='object') ? j.categories : {};
-    state.targets = (j.targets && typeof j.targets==='object') ? j.targets : {};
+    // targets: 신버전 {계좌:{유형:비중}} 또는 구버전 {유형:비중} 모두 허용
+    // 구버전(값이 숫자)이면 마이그레이션 불가(어느 계좌인지 모름) → 빈 값으로 시작
+    var jt = (j.targets && typeof j.targets==='object') ? j.targets : {};
+    var isFlat = Object.keys(jt).some(function(k){ return typeof jt[k]==='number'; });
+    state.targets = isFlat ? {} : jt;
     state.manual.tx = Array.isArray(j.manualTx) ? j.manualTx : [];
     state.manual.flows = Array.isArray(j.manualFlows) ? j.manualFlows : [];
+    state.manual.divs = Array.isArray(j.manualDivs) ? j.manualDivs : [];
+    state.manual.splits = Array.isArray(j.manualSplits) ? j.manualSplits : [];
     lsSet(LS.cat, state.categories);
     lsSet(LS.tgt, state.targets);
     lsSet(LS.tx, state.manual.tx);
     lsSet(LS.fl, state.manual.flows);
+    lsSet(LS.dv, state.manual.divs);
+    lsSet(LS.sp, state.manual.splits);
     if(j.githubUrl){ lsSet(LS.gh, j.githubUrl); } else { try{ localStorage.removeItem(LS.gh); }catch(e){} }
     rebuildCatColors();
-    renderManualTxList(); renderManualFlList();
+    renderManualTxList(); renderManualFlList(); renderManualDvList(); renderManualSpList();
     render();
     var when = j._createdAt ? (' (' + j._createdAt.slice(0,10) + ' 백업)') : '';
     dmMsg('복원 완료'+when+' · 거래 '+state.manual.tx.length+'건 · 입출금 '+state.manual.flows.length+'건 · 카테고리 '+Object.keys(state.categories).length+'개.', 'ok');
@@ -2465,12 +3134,12 @@ function restoreData(file){
   rd.readAsText(file);
 }
 function execWipe(){
-  try{ [LS.cat,LS.tx,LS.fl,LS.tgt,LS.gh].forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
-  state.categories={}; state.targets={}; state.manual.tx=[]; state.manual.flows=[];
+  try{ [LS.cat,LS.tx,LS.fl,LS.dv,LS.sp,LS.tgt,LS.acctCfg,LS.gh].forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
+  state.categories={}; state.targets={}; state.acctCfg={order:[],hidden:[]}; state.manual.tx=[]; state.manual.flows=[]; state.manual.divs=[]; state.manual.splits=[];
   state.base=null; state.extraWarnings=[];
   state.account=null; state.view='ticker'; state.period='all'; state.inclCash=true;
   rebuildCatColors();
-  renderManualTxList(); renderManualFlList();
+  renderManualTxList(); renderManualFlList(); renderManualDvList(); renderManualSpList(); renderAcctCfg();
   setStatus('데이터가 없습니다. Excel 업로드 또는 직접 입력으로 시작하세요.');
   render();
   hideWipePanel();
@@ -2516,18 +3185,30 @@ function handleFile(file){
       if(norm.errors.length){ showMessages(norm.errors,norm.warnings);
         setStatus('업로드 실패: '+file.name+' — 오류 수정 후 다시 업로드해 주세요.'); return; }
       try{ localStorage.removeItem(LS.wiped); }catch(e){}
-      // tx·flows → manual (편집 가능, localStorage 저장)
+      // tx·flows·divs → manual (편집 가능, localStorage 저장)
       state.manual.tx    = norm.data.tx;
       state.manual.flows = norm.data.flows;
+      state.manual.divs  = norm.data.divs;
+      state.manual.splits= norm.data.splits;
       lsSet(LS.tx, state.manual.tx);
       lsSet(LS.fl, state.manual.flows);
+      lsSet(LS.dv, state.manual.divs);
+      lsSet(LS.sp, state.manual.splits);
+      // Excel 거래의 유형 컬럼 → 카테고리에 병합 (기존 화면 카테고리 유지, Excel 값이 우선)
+      if(norm.data.categories){
+        var nCat=0;
+        Object.keys(norm.data.categories).forEach(function(tk){
+          state.categories[tk]=norm.data.categories[tk]; nCat++;
+        });
+        if(nCat>0){ lsSet(LS.cat, state.categories); rebuildCatColors(); }
+      }
       // 메타데이터(시세·환율·분할·이름) → base
-      state.base={ tx:[], flows:[], divs:norm.data.divs,
-        splits:norm.data.splits, snapshot:norm.data.snapshot,
+      state.base={ tx:[], flows:[], divs:[], splits:[],
+        snapshot:norm.data.snapshot,
         fx:norm.data.fx, names:norm.data.names };
       state.extraWarnings=norm.warnings.slice();
       setStatus('데이터 출처: '+file.name+' (거래 '+norm.data.tx.length+'건 · 입출금 '+norm.data.flows.length+'건 · 배당 '+norm.data.divs.length+'건)');
-      renderManualTxList(); renderManualFlList();
+      renderManualTxList(); renderManualFlList(); renderManualDvList(); renderManualSpList();
       render();
     }catch(err){ showMessages(['파일을 읽지 못했습니다: '+err.message],[]); }
   };
@@ -2725,6 +3406,8 @@ el('btnWipeConfirm').addEventListener('click',function(){
 });
 el('btnAddTx').addEventListener('click',addTxRow);
 el('btnAddFl').addEventListener('click',addFlRow);
+el('btnAddDv').addEventListener('click',addDvRow);
+el('btnAddSp').addEventListener('click',addSpRow);
 el('txMkt').addEventListener('change',function(){ el('txFxWrap').style.display=this.value==='US'?'flex':'none'; });
 
 document.querySelectorAll('.toggles .tg[data-view]').forEach(function(t){
@@ -2734,6 +3417,19 @@ document.querySelectorAll('.toggles .tg[data-view]').forEach(function(t){
   });
 });
 el('ckCash').addEventListener('change',function(e){ state.inclCash=e.target.checked; renderDonut(); });
+el('btnLoadHist').addEventListener('click',function(){ el('histFileInput').click(); });
+el('histFileInput').addEventListener('change',function(e){ if(e.target.files[0]) loadHistoryFile(e.target.files[0]); e.target.value=''; });
+document.querySelectorAll('#prChips .tg').forEach(function(t){
+  t.addEventListener('click',function(){
+    document.querySelectorAll('#prChips .tg').forEach(function(x){ x.classList.remove('on'); });
+    t.classList.add('on');
+    state.prPeriod=t.dataset.p;
+    var ds=el('prStart'); ds.style.display=t.dataset.p==='custom'?'inline-block':'none';
+    if(t.dataset.p==='custom' && ds.value) state.prStart=ds.value;
+    renderPeriodReturns();
+  });
+});
+el('prStart').addEventListener('change',function(){ state.prStart=this.value; state.prPeriod='custom'; renderPeriodReturns(); });
 document.querySelectorAll('#periodChips .tg').forEach(function(t){
   t.addEventListener('click',function(){
     document.querySelectorAll('#periodChips .tg').forEach(function(x){ x.classList.remove('on'); });
@@ -2756,6 +3452,8 @@ document.querySelectorAll('.de-tab').forEach(function(t){
     t.classList.add('on');
     el('paneTx').style.display=t.dataset.de==='tx'?'block':'none';
     el('paneFl').style.display=t.dataset.de==='fl'?'block':'none';
+    el('paneDv').style.display=t.dataset.de==='dv'?'block':'none';
+    el('paneSp').style.display=t.dataset.de==='sp'?'block':'none';
   });
 });
 // 유형 성과 지표 토글(연환산/누적)
@@ -2802,11 +3500,14 @@ if(!hasChart) bootWarnings.push('차트 라이브러리(Chart.js) 로드 실패 
 })();
 renderManualTxList();
 renderManualFlList();
+renderManualDvList();
+renderManualSpList();
+renderAcctCfg();
 // 샘플은 자동 로드하지 않음 — 수동입력·Excel·백업 데이터만 렌더
 // (샘플을 보려면 빈 화면의 "샘플 데이터로 둘러보기" 버튼 사용)
 render();
 // 저장된 GitHub 주소가 있으면 최신 종가 자동 반영
-if(lsGet(LS.gh)){ loadGithubPrices(false); }
+if(lsGet(LS.gh)){ loadGithubPrices(false); tryAutoLoadHistory(); }
 })();
 </script>
 </body>
