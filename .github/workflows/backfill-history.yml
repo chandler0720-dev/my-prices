@@ -1,17 +1,18 @@
-name: Backfill History
+name: Update Prices
 
-# 수동 실행(최초 백필) + 매일 누적
+# 매일 1회 자동 실행 + 수동 실행 버튼
 on:
   schedule:
-    # UTC 08:00 = KST 17:00 (update-prices 이후)
-    - cron: '0 8 * * 1-5'
-  workflow_dispatch: {}
+    # UTC 07:30 = KST 16:30 (한국장 마감 직후). 분/시는 UTC 기준.
+    - cron: '30 7 * * 1-5'
+  workflow_dispatch: {}   # Actions 탭에서 손으로도 돌릴 수 있음
 
+# 저장소에 파일을 커밋하기 위한 권한
 permissions:
   contents: write
 
 jobs:
-  backfill:
+  update:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,18 +26,30 @@ jobs:
       - name: Install dependencies
         run: pip install yfinance pykrx
 
-      - name: Backfill history
-        run: python backfill_history.py
+      - name: Fetch prices
+        run: python fetch_prices.py
 
       - name: Commit & push if changed
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add history.json
+          git add prices.json
           if git diff --staged --quiet; then
             echo "변경 없음 — 커밋 생략"
-          else
-            git commit -m "Backfill history ($(date -u +%Y-%m-%d))"
-            git push
+            exit 0
           fi
-
+          git commit -m "Update prices ($(date -u +%Y-%m-%d))"
+          # 충돌(다른 워크플로가 먼저 push) 대비: pull --rebase 후 push, 최대 5회 재시도
+          n=0
+          until [ $n -ge 5 ]; do
+            if git push; then
+              echo "push 성공"
+              exit 0
+            fi
+            echo "push 거부됨 — 원격 변경을 받아 재시도 ($((n+1))/5)"
+            git pull --rebase --autostash origin main || true
+            n=$((n+1))
+            sleep 3
+          done
+          echo "5회 시도 후에도 push 실패"
+          exit 1
