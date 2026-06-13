@@ -2424,7 +2424,8 @@ function tryAutoLoadHistory(){
   var base=historyUrlFromGh();
   if(!base || state.history) return;
   var jUrl=(typeof toJsDelivr==='function')?toJsDelivr(base):null;
-  var targets=[]; if(jUrl) targets.push(jUrl); targets.push(base);
+  // GitHub raw 먼저(최신) → jsDelivr 폴백 (jsDelivr 캐시가 옛 데이터를 줄 수 있음)
+  var targets=[base]; if(jUrl) targets.push(jUrl);
   var i=0;
   function next(){
     if(i>=targets.length) return; // 조용히 실패 (수동 버튼 있음)
@@ -3276,10 +3277,10 @@ function fetchGithubPrices(url){
   var rawUrl=normalizeGhUrl(url);
   lsSet(LS.gh, rawUrl);
   var jUrl=toJsDelivr(rawUrl);
-  // 시도 순서: jsDelivr(CORS 지원) → raw 직접 → 실패 시 파일 업로드 안내
-  var attempts=[];
-  if(jUrl) attempts.push({u:jUrl, label:'jsDelivr CDN'});
-  attempts.push({u:rawUrl, label:'GitHub 직접'});
+  // 시도 순서: GitHub raw 먼저(항상 최신) → jsDelivr(CDN, 캐시 가능성) 폴백
+  // jsDelivr은 갱신이 최대 수시간 늦어 옛 데이터를 줄 수 있으므로 raw를 우선한다.
+  var attempts=[{u:rawUrl, label:'GitHub'}];
+  if(jUrl) attempts.push({u:jUrl, label:'jsDelivr CDN(보조)'});
 
   setStatus('가격을 불러오는 중… ('+attempts[0].label+')');
   var idx=0, lastErr=null;
@@ -3290,7 +3291,7 @@ function fetchGithubPrices(url){
     setStatus('가격을 불러오는 중… ('+a.label+')');
     fetch(u,{cache:'no-store',mode:'cors'})
       .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-      .then(function(j){ applyPricesJson(j,'GitHub'); })
+      .then(function(j){ applyPricesJson(j, a.label.indexOf('jsDelivr')>=0?'jsDelivr':'GitHub'); })
       .catch(function(e){ lastErr=e; tryNext(); });
   }
   function onAllFail(err){
