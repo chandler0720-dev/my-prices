@@ -182,6 +182,25 @@ cursor:pointer;color:var(--mut);font-size:14px}
 .seg-b{padding:7px 16px;font-size:13.5px;color:var(--mut);cursor:pointer;background:#fff;border-right:1px solid var(--line)}
 .seg-b:last-child{border-right:none}
 .seg-b.on{background:var(--coralP);color:var(--coralD);font-weight:600}
+/* ── 메모 (계좌 지침 · 종목 메모) ── */
+.memo-box{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+.memo-box h4{margin:0 0 8px;font-size:14px;font-weight:600;color:var(--ink)}
+.memo-area{width:100%;min-height:90px;font:inherit;font-size:14px;line-height:1.6;padding:10px 12px;border:1px solid var(--line);border-radius:8px;resize:vertical;box-sizing:border-box;color:var(--ink);background:#fff}
+.memo-area:focus{border-color:var(--blue);outline:none}
+.memo-saved{font-size:12.5px;color:var(--faint);margin-top:6px;min-height:16px}
+/* 종목 메모 펼침 행 */
+.note-row td{background:#faf9f6;padding:14px 18px}
+.note-grid{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.note-field{display:flex;flex-direction:column;gap:5px}
+.note-field label{font-size:12.5px;font-weight:600;color:var(--mut)}
+.note-field input,.note-field textarea{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:7px;box-sizing:border-box;color:var(--ink);background:#fff}
+.note-field input:focus,.note-field textarea:focus{border-color:var(--blue);outline:none}
+.note-target{width:160px}
+.note-memo{flex:1;min-width:240px}
+.note-memo textarea{width:100%;min-height:64px;resize:vertical}
+.tname.clickable{cursor:pointer}
+.tname.clickable:hover{color:var(--blue);text-decoration:underline}
+.note-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--coral);margin-left:5px;vertical-align:middle}
 /* ── 리밸런싱 ── */
 .rebal-note{font-size:13.5px;margin:0 0 12px;padding:9px 13px;border-radius:8px;background:#f3f6f9;color:var(--blue);display:none}
 .rebal-note.warn{background:#faeeda;color:#633806;display:block}
@@ -340,6 +359,11 @@ cursor:pointer;color:var(--mut);font-size:14px}
           <tbody></tbody>
           <tfoot></tfoot>
         </table>
+      </div>
+      <div class="memo-box">
+        <h4 id="acctMemoLabel">계좌 관리지침 메모</h4>
+        <textarea class="memo-area" id="acctMemoArea" placeholder="이 계좌의 운영 목표·리밸런싱 원칙·매매 규칙 등을 자유롭게 기록하세요. 자동 저장됩니다."></textarea>
+        <div class="memo-saved" id="acctMemoSaved"></div>
       </div>
     </div>
   </div>
@@ -1867,7 +1891,7 @@ var SAMPLE = {
 var E = window.Engine;
 
 /* ── localStorage ── */
-var LS = { cat:'amd_cat', tx:'amd_tx', fl:'amd_fl', dv:'amd_dv', sp:'amd_sp', tgt:'amd_tgt', gh:'amd_gh_url', zoom:'amd_zoom', acctCfg:'amd_acct_cfg' };
+var LS = { cat:'amd_cat', tx:'amd_tx', fl:'amd_fl', dv:'amd_dv', sp:'amd_sp', tgt:'amd_tgt', gh:'amd_gh_url', zoom:'amd_zoom', acctCfg:'amd_acct_cfg', notes:'amd_notes', acctMemo:'amd_acct_memo' };
 function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } }
 function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 
@@ -1882,6 +1906,9 @@ var state = {
   charts:{}, extraWarnings:[],
   editingTxIdx:null, editingFlIdx:null, editingDvIdx:null, editingSpIdx:null,
   acctCfg: lsGet('amd_acct_cfg') || { order:[], hidden:[] }, // {order:[...], hidden:[...]}
+  notes: lsGet('amd_notes') || {},        // {ticker: {target:number|null, memo:string}}
+  acctMemo: lsGet('amd_acct_memo') || {}, // {계좌명: 관리지침 텍스트}
+  expandedTicker: null,                    // 종목 메모 패널이 열린 티커
   history:null, prPeriod:'all', prStart:null
 };
 var bootWarnings = [];
@@ -2194,6 +2221,29 @@ function targetsForAccount(){
   if(!state.targets[acc] || typeof state.targets[acc]!=='object') state.targets[acc]={};
   return state.targets[acc];
 }
+// 계좌 관리지침 메모 로드/저장
+function loadAcctMemo(){
+  var acc=state.account; if(!acc) return;
+  var area=el('acctMemoArea'); if(!area) return;
+  var lbl=el('acctMemoLabel'); if(lbl) lbl.textContent=acc+' 계좌 · 관리지침 메모';
+  area.value=(state.acctMemo && state.acctMemo[acc]) || '';
+  var saved=el('acctMemoSaved'); if(saved) saved.textContent='';
+}
+var _acctMemoTimer=null;
+function onAcctMemoInput(){
+  var acc=state.account; if(!acc) return;
+  var area=el('acctMemoArea'); if(!area) return;
+  if(!state.acctMemo || typeof state.acctMemo!=='object') state.acctMemo={};
+  var v=area.value;
+  if(v.trim()==='') delete state.acctMemo[acc];
+  else state.acctMemo[acc]=v;
+  // 디바운스 저장
+  if(_acctMemoTimer) clearTimeout(_acctMemoTimer);
+  _acctMemoTimer=setTimeout(function(){
+    lsSet(LS.acctMemo, state.acctMemo);
+    var saved=el('acctMemoSaved'); if(saved){ saved.textContent='저장됨 · '+new Date().toLocaleTimeString(); }
+  }, 400);
+}
 function renderRebalance(){
   var r=state.result; if(!r) return;
   var cs=E.categoryStats(r, state.categories);
@@ -2209,11 +2259,21 @@ function renderRebalance(){
   if(guide){ guide.style.display='none'; }
   if(body){ body.style.display='block'; }
   var lbl=el('rebalAcctLabel'); if(lbl) lbl.textContent=state.account+' 계좌 · 목표 비중';
+  // 계좌 관리지침 메모: 유형 지정 여부와 무관하게 항상 로드
+  loadAcctMemo();
+  var rebalTableWrap=el('rebalTable').closest('.tablewrap');
+  var rebalCap=el('rebalBody').querySelector('.cap');
+  var rebalNoteEl=el('rebalNote');
   if(!cs.anyAssigned){
-    if(body) body.style.display='none';
-    if(guide){ guide.style.display='block'; guide.textContent='이 계좌에 유형이 지정된 보유 종목이 없습니다. 거래의 유형을 입력하면 리밸런싱을 설정할 수 있습니다.'; }
+    // 표는 숨기되 메모 박스는 보이게 — 본문은 표시 유지
+    if(rebalTableWrap) rebalTableWrap.style.display='none';
+    if(rebalCap) rebalCap.style.display='none';
+    if(rebalNoteEl){ rebalNoteEl.style.display='block'; rebalNoteEl.textContent='이 계좌에 유형이 지정된 보유 종목이 없습니다. 거래의 유형을 입력하면 목표 비중을 설정할 수 있습니다. (아래 관리지침 메모는 사용 가능합니다.)'; }
     return;
   }
+  if(rebalTableWrap) rebalTableWrap.style.display='';
+  if(rebalCap) rebalCap.style.display='';
+  if(rebalNoteEl) rebalNoteEl.style.display='';
   var acctTargets=targetsForAccount();
   var rb=E.rebalance(cs, acctTargets);
   var tbody=el('rebalTable').querySelector('tbody');
@@ -2291,6 +2351,7 @@ function renderTable(){
   });
   var d=currentData();
   var tb=el('holdTable').querySelector('tbody'); tb.innerHTML='';
+  var colCount=12;
   rows.forEach(function(h){
     var cat=state.categories[h.ticker]||'';
     var catHtml=cat
@@ -2298,10 +2359,12 @@ function renderTable(){
       : '<span class="cat-tag cat-add" data-ticker="'+h.ticker+'">+ 추가</span>';
     catHtml+='<input class="cat-inp" type="text" list="catlist" data-ticker="'+h.ticker+'" value="'+cat+'" style="display:none">';
     var noPrice=h.missingPrice===true;
+    var note=state.notes[h.ticker]||{};
+    var hasNote = (note.target!=null && note.target!=='') || (note.memo && note.memo.trim()!=='');
     var tr=document.createElement('tr');
     if(noPrice) tr.style.opacity='0.7';
     tr.innerHTML=
-      '<td><div class="tname">'+h.name+'</div>'+
+      '<td><div class="tname clickable" data-note-ticker="'+h.ticker+'" title="클릭하여 목표가·메모 입력">'+h.name+(hasNote?'<span class="note-dot" title="메모 있음"></span>':'')+'</div>'+
         '<div class="tsub">'+h.ticker+(noPrice?' <span class="no-px-tag">시세 없음</span>':'')+'</div></td>'+
       '<td><span class="mk '+h.mkt+'">'+(h.mkt==='US'?'미국':'한국')+'</span></td>'+
       '<td>'+h.qty.toLocaleString()+'</td>'+
@@ -2315,6 +2378,34 @@ function renderTable(){
       '<td>'+(noPrice?'—':fmtPct(h.weight))+'</td>'+
       '<td class="cat-cell">'+catHtml+'</td>';
     tb.appendChild(tr);
+    // 메모 펼침 행 (열린 종목만)
+    if(state.expandedTicker===h.ticker){
+      var unit = h.mkt==='US' ? '$' : '₩';
+      var tgtVal = (note.target!=null && note.target!=='') ? note.target : '';
+      var memoVal = note.memo || '';
+      var ntr=document.createElement('tr');
+      ntr.className='note-row';
+      ntr.innerHTML='<td colspan="'+colCount+'">'+
+        '<div class="note-grid">'+
+          '<div class="note-field note-target">'+
+            '<label>목표가 ('+unit+', '+(h.mkt==='US'?'USD':'KRW')+')</label>'+
+            '<input type="number" step="any" id="noteTarget" value="'+tgtVal+'" placeholder="예: '+(h.mkt==='US'?'250':'95000')+'">'+
+            (note.target!=null && note.target!=='' && !noPrice ? '<span style="font-size:12px;color:var(--mut);margin-top:3px">현재가 대비 '+fmtPct((h.price/note.target-1),true)+'</span>' : '')+
+          '</div>'+
+          '<div class="note-field note-memo">'+
+            '<label>메모</label>'+
+            '<textarea id="noteMemo" placeholder="이 종목의 매매 판단·목표·근거 등을 기록하세요.">'+memoVal.replace(/</g,'&lt;')+'</textarea>'+
+          '</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:8px;align-items:center;margin-top:10px">'+
+          '<button class="primary" id="noteSave" data-ticker="'+h.ticker+'">저장</button>'+
+          '<button id="noteClose">닫기</button>'+
+          (hasNote?'<button class="danger" id="noteDelete" data-ticker="'+h.ticker+'">삭제</button>':'')+
+          '<span class="memo-saved" id="noteSaved" style="margin:0"></span>'+
+        '</div>'+
+      '</td>';
+      tb.appendChild(ntr);
+    }
   });
   var chips=Object.keys(r.realizedByTicker).map(function(tk){
     var v=r.realizedByTicker[tk];
@@ -2325,6 +2416,42 @@ function renderTable(){
     (chips?' ( '+chips+' )':'')+
     ' &nbsp;·&nbsp; 배당 수령 누계 <b>'+fmtKrw(r.divTotalKrw)+'</b>'+
     ' &nbsp;·&nbsp; 비중은 현금 포함 총 평가액 기준';
+
+  // 종목명 클릭 → 메모 패널 토글
+  tb.querySelectorAll('.tname.clickable').forEach(function(nm){
+    nm.addEventListener('click',function(){
+      var tk=nm.dataset.noteTicker;
+      state.expandedTicker = (state.expandedTicker===tk) ? null : tk;
+      renderTable();
+    });
+  });
+  // 저장
+  var saveBtn=tb.querySelector('#noteSave');
+  if(saveBtn){
+    saveBtn.addEventListener('click',function(){
+      var tk=saveBtn.dataset.ticker;
+      var tEl=tb.querySelector('#noteTarget'), mEl=tb.querySelector('#noteMemo');
+      var tgt=tEl&&tEl.value!=='' ? parseFloat(tEl.value) : null;
+      var memo=mEl?mEl.value:'';
+      if(!state.notes||typeof state.notes!=='object') state.notes={};
+      if((tgt==null||isNaN(tgt)) && memo.trim()===''){ delete state.notes[tk]; }
+      else { state.notes[tk]={ target:(tgt!=null&&!isNaN(tgt))?tgt:null, memo:memo }; }
+      lsSet(LS.notes, state.notes);
+      var sv=tb.querySelector('#noteSaved'); if(sv) sv.textContent='저장됨';
+      // 점 표시 갱신 위해 다시 렌더 (패널은 유지)
+      renderTable();
+    });
+  }
+  var closeBtn=tb.querySelector('#noteClose');
+  if(closeBtn){ closeBtn.addEventListener('click',function(){ state.expandedTicker=null; renderTable(); }); }
+  var delBtn=tb.querySelector('#noteDelete');
+  if(delBtn){
+    delBtn.addEventListener('click',function(){
+      var tk=delBtn.dataset.ticker;
+      delete state.notes[tk]; lsSet(LS.notes, state.notes);
+      renderTable();
+    });
+  }
 }
 
 /* ── 환율 / 분해 ── */
@@ -3086,6 +3213,9 @@ function backupData(){
     manualFlows: state.manual.flows,
     manualDivs: state.manual.divs,
     manualSplits: state.manual.splits,
+    notes: state.notes,
+    acctMemo: state.acctMemo,
+    acctCfg: state.acctCfg,
     githubUrl: lsGet(LS.gh)||''
   };
   var blob=new Blob([JSON.stringify(payload,null,1)],{type:'application/json'});
@@ -3119,6 +3249,10 @@ function restoreData(file){
     state.manual.flows = Array.isArray(j.manualFlows) ? j.manualFlows : [];
     state.manual.divs = Array.isArray(j.manualDivs) ? j.manualDivs : [];
     state.manual.splits = Array.isArray(j.manualSplits) ? j.manualSplits : [];
+    state.notes = (j.notes && typeof j.notes==='object') ? j.notes : {};
+    state.acctMemo = (j.acctMemo && typeof j.acctMemo==='object') ? j.acctMemo : {};
+    if(j.acctCfg && typeof j.acctCfg==='object') state.acctCfg=j.acctCfg;
+    lsSet(LS.notes, state.notes); lsSet(LS.acctMemo, state.acctMemo); lsSet(LS.acctCfg, state.acctCfg);
     lsSet(LS.cat, state.categories);
     lsSet(LS.tgt, state.targets);
     lsSet(LS.tx, state.manual.tx);
@@ -3135,8 +3269,8 @@ function restoreData(file){
   rd.readAsText(file);
 }
 function execWipe(){
-  try{ [LS.cat,LS.tx,LS.fl,LS.dv,LS.sp,LS.tgt,LS.acctCfg,LS.gh].forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
-  state.categories={}; state.targets={}; state.acctCfg={order:[],hidden:[]}; state.manual.tx=[]; state.manual.flows=[]; state.manual.divs=[]; state.manual.splits=[];
+  try{ [LS.cat,LS.tx,LS.fl,LS.dv,LS.sp,LS.tgt,LS.acctCfg,LS.notes,LS.acctMemo,LS.gh].forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
+  state.categories={}; state.targets={}; state.acctCfg={order:[],hidden:[]}; state.notes={}; state.acctMemo={}; state.manual.tx=[]; state.manual.flows=[]; state.manual.divs=[]; state.manual.splits=[];
   state.base=null; state.extraWarnings=[];
   state.account=null; state.view='ticker'; state.period='all'; state.inclCash=true;
   rebuildCatColors();
@@ -3409,6 +3543,7 @@ el('btnAddTx').addEventListener('click',addTxRow);
 el('btnAddFl').addEventListener('click',addFlRow);
 el('btnAddDv').addEventListener('click',addDvRow);
 el('btnAddSp').addEventListener('click',addSpRow);
+if(el('acctMemoArea')) el('acctMemoArea').addEventListener('input',onAcctMemoInput);
 el('txMkt').addEventListener('change',function(){ el('txFxWrap').style.display=this.value==='US'?'flex':'none'; });
 
 document.querySelectorAll('.toggles .tg[data-view]').forEach(function(t){
