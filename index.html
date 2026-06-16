@@ -709,10 +709,12 @@ cursor:pointer;color:var(--mut);font-size:14px}
       if (!ticker) errors.push('거래내역 ' + r._row + '행: 티커 누락');
       if (!(qty > 0)) errors.push('거래내역 ' + r._row + '행: 수량은 양수');
       if (!(price > 0)) errors.push('거래내역 ' + r._row + '행: 단가는 양수');
-      if (ticker && r.name) names[ticker] = String(r.name).trim();
+      var nameVal = r.name ? String(r.name).trim() : '';
+      if (ticker && nameVal) names[ticker] = nameVal;
       // 유형이 적혀 있으면 종목→유형 맵에 수집 (나중 거래가 우선)
       if (ticker && category) categories[ticker] = category;
-      return { date: date, mkt: mkt, ticker: ticker, side: side, qty: qty || 0, price: price || 0, fee: fee, fxRate: fx, account: account };
+      // name을 거래 객체에 포함 → manual.tx로 저장 시 종목명도 함께 영구 보존
+      return { date: date, mkt: mkt, ticker: ticker, name: nameVal, side: side, qty: qty || 0, price: price || 0, fee: fee, fxRate: fx, account: account };
     });
 
     var flows = parseSheet('입출금', {
@@ -1891,7 +1893,7 @@ var SAMPLE = {
 var E = window.Engine;
 
 /* ── localStorage ── */
-var LS = { cat:'amd_cat', tx:'amd_tx', fl:'amd_fl', dv:'amd_dv', sp:'amd_sp', tgt:'amd_tgt', gh:'amd_gh_url', zoom:'amd_zoom', acctCfg:'amd_acct_cfg', notes:'amd_notes', acctMemo:'amd_acct_memo' };
+var LS = { cat:'amd_cat', tx:'amd_tx', fl:'amd_fl', dv:'amd_dv', sp:'amd_sp', tgt:'amd_tgt', gh:'amd_gh_url', zoom:'amd_zoom', acctCfg:'amd_acct_cfg', notes:'amd_notes', acctMemo:'amd_acct_memo', names:'amd_names' };
 function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } }
 function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 
@@ -1906,6 +1908,7 @@ var state = {
   charts:{}, extraWarnings:[],
   editingTxIdx:null, editingFlIdx:null, editingDvIdx:null, editingSpIdx:null,
   acctCfg: lsGet('amd_acct_cfg') || { order:[], hidden:[] }, // {order:[...], hidden:[...]}
+  names: lsGet('amd_names') || {},          // {ticker: 종목명} — 영구 저장(새로고침에도 유지)
   notes: lsGet('amd_notes') || {},        // {ticker: {target:number|null, memo:string}}
   acctMemo: lsGet('amd_acct_memo') || {}, // {계좌명: 관리지침 텍스트}
   expandedTicker: null,                    // 종목 메모 패널이 열린 티커
@@ -1962,11 +1965,26 @@ function saveCat(ticker, raw){
 }
 
 /* ── 데이터 병합 ── */
+// 종목명을 영구 사전에 누적 저장 (한 번 알게 되면 유지)
+function rememberNames(src){
+  if(!src) return;
+  if(!state.names||typeof state.names!=='object') state.names={};
+  var changed=false;
+  Object.keys(src).forEach(function(tk){
+    var nm=src[tk];
+    if(nm && nm!==tk && state.names[tk]!==nm){ state.names[tk]=nm; changed=true; }
+  });
+  if(changed) lsSet(LS.names, state.names);
+}
 function currentData(){
   var b = state.base || { tx:[], flows:[], divs:[], splits:[],
     snapshot:{asof:null,prices:[]}, fx:[], names:{} };
-  var names = Object.assign({}, b.names);
+  // 병합 우선순위: 영구 사전(state.names) < base.names < manual.tx 이름
+  // (최신 입력이 우선이되, 비어있으면 영구 사전이 메움)
+  var names = Object.assign({}, state.names || {}, b.names || {});
   state.manual.tx.forEach(function(t){ if(t.name&&t.ticker) names[t.ticker]=t.name; });
+  // 이번에 확보한 이름을 영구 사전에 반영
+  rememberNames(names);
   return {
     tx: b.tx.concat(state.manual.tx).sort(function(a,x){ return a.date<x.date?-1:1; }),
     flows: b.flows.concat(state.manual.flows).sort(function(a,x){ return a.date<x.date?-1:1; }),
@@ -3216,6 +3234,7 @@ function backupData(){
     notes: state.notes,
     acctMemo: state.acctMemo,
     acctCfg: state.acctCfg,
+    names: state.names,
     githubUrl: lsGet(LS.gh)||''
   };
   var blob=new Blob([JSON.stringify(payload,null,1)],{type:'application/json'});
@@ -3251,8 +3270,9 @@ function restoreData(file){
     state.manual.splits = Array.isArray(j.manualSplits) ? j.manualSplits : [];
     state.notes = (j.notes && typeof j.notes==='object') ? j.notes : {};
     state.acctMemo = (j.acctMemo && typeof j.acctMemo==='object') ? j.acctMemo : {};
+    if(j.names && typeof j.names==='object') state.names=j.names;
     if(j.acctCfg && typeof j.acctCfg==='object') state.acctCfg=j.acctCfg;
-    lsSet(LS.notes, state.notes); lsSet(LS.acctMemo, state.acctMemo); lsSet(LS.acctCfg, state.acctCfg);
+    lsSet(LS.notes, state.notes); lsSet(LS.acctMemo, state.acctMemo); lsSet(LS.acctCfg, state.acctCfg); lsSet(LS.names, state.names);
     lsSet(LS.cat, state.categories);
     lsSet(LS.tgt, state.targets);
     lsSet(LS.tx, state.manual.tx);
@@ -3269,8 +3289,8 @@ function restoreData(file){
   rd.readAsText(file);
 }
 function execWipe(){
-  try{ [LS.cat,LS.tx,LS.fl,LS.dv,LS.sp,LS.tgt,LS.acctCfg,LS.notes,LS.acctMemo,LS.gh].forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
-  state.categories={}; state.targets={}; state.acctCfg={order:[],hidden:[]}; state.notes={}; state.acctMemo={}; state.manual.tx=[]; state.manual.flows=[]; state.manual.divs=[]; state.manual.splits=[];
+  try{ [LS.cat,LS.tx,LS.fl,LS.dv,LS.sp,LS.tgt,LS.acctCfg,LS.notes,LS.acctMemo,LS.names,LS.gh].forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
+  state.categories={}; state.targets={}; state.acctCfg={order:[],hidden:[]}; state.notes={}; state.acctMemo={}; state.names={}; state.manual.tx=[]; state.manual.flows=[]; state.manual.divs=[]; state.manual.splits=[];
   state.base=null; state.extraWarnings=[];
   state.account=null; state.view='ticker'; state.period='all'; state.inclCash=true;
   rebuildCatColors();
@@ -3341,6 +3361,7 @@ function handleFile(file){
       state.base={ tx:[], flows:[], divs:[], splits:[],
         snapshot:norm.data.snapshot,
         fx:norm.data.fx, names:norm.data.names };
+      rememberNames(norm.data.names);  // 종목명 영구 저장 (새로고침에도 유지)
       state.extraWarnings=norm.warnings.slice();
       setStatus('데이터 출처: '+file.name+' (거래 '+norm.data.tx.length+'건 · 입출금 '+norm.data.flows.length+'건 · 배당 '+norm.data.divs.length+'건)');
       renderManualTxList(); renderManualFlList(); renderManualDvList(); renderManualSpList();
@@ -3363,6 +3384,8 @@ function applyPricesJson(j, srcLabel){
   }).filter(function(p){ return p.ticker && p.price>0; });
   var asof=j.asof || (j.asof_time||'').slice(0,10) || new Date().toISOString().slice(0,10);
   state.base.snapshot={ asof:asof, prices:prices };
+  // prices.json에 종목명이 포함돼 있으면 영구 사전에 반영
+  if(j.names && typeof j.names==='object') rememberNames(j.names);
   // 환율 교체(있을 때만)
   if(Array.isArray(j.fx) && j.fx.length){
     state.base.fx=j.fx.map(function(r){ return { date:String(r.date).slice(0,10), rate:Number(r.rate) }; })
