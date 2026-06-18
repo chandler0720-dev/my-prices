@@ -1,18 +1,17 @@
-name: Update Prices
+name: Backfill History
 
-# 매일 1회 자동 실행 + 수동 실행 버튼
+# 수동 실행(최초 백필) + 매일 누적
 on:
   schedule:
-    # UTC 07:30 = KST 16:30 (한국장 마감 직후). 분/시는 UTC 기준.
-    - cron: '30 7 * * 1-5'
-  workflow_dispatch: {}   # Actions 탭에서 손으로도 돌릴 수 있음
+    # UTC 08:00 = KST 17:00 (update-prices 이후)
+    - cron: '0 8 * * 1-5'
+  workflow_dispatch: {}
 
-# 저장소에 파일을 커밋하기 위한 권한
 permissions:
   contents: write
 
 jobs:
-  update:
+  backfill:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,30 +25,46 @@ jobs:
       - name: Install dependencies
         run: pip install yfinance pykrx
 
-      - name: Fetch prices
-        run: python fetch_prices.py
+      - name: Backfill history
+        run: python backfill_history.py
 
       - name: Commit & push if changed
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add prices.json
+          git add history.json
           if git diff --staged --quiet; then
             echo "변경 없음 — 커밋 생략"
             exit 0
           fi
-          git commit -m "Update prices ($(date -u +%Y-%m-%d))"
-          # 충돌(다른 워크플로가 먼저 push) 대비: pull --rebase 후 push, 최대 5회 재시도
+          git commit -m "Backfill history ($(date -u +%Y-%m-%d))"
+          # 충돌 안전 push: 최대 6회. 거부되면 진행 중이던 rebase를 취소하고
+          # 원격 최신을 받은 뒤, 이 파일은 우리가 방금 만든 최신본으로 덮어써 재커밋한다.
           n=0
-          until [ $n -ge 5 ]; do
+          until [ $n -ge 6 ]; do
             if git push; then
               echo "push 성공"
               exit 0
             fi
-            echo "push 거부됨 — 원격 변경을 받아 재시도 ($((n+1))/5)"
-            git pull --rebase --autostash origin main || true
             n=$((n+1))
+            echo "push 거부됨 — 원격 동기화 후 재시도 ($n/6)"
+            # 혹시 멈춰 있을 수 있는 rebase/merge 상태를 깨끗이 정리
+            git rebase --abort 2>/dev/null || true
+            git merge --abort 2>/dev/null || true
+            # 방금 만든 파일 내용을 임시 보관
+            cp history.json /tmp/history.json.mine 2>/dev/null || true
+            # 원격 최신으로 맞춤 (로컬 커밋은 버리고 원격 기준으로 리셋)
+            git fetch origin main || true
+            git reset --hard origin/main || true
+            # 우리 최신 파일을 다시 덮어쓰고 커밋
+            cp /tmp/history.json.mine history.json 2>/dev/null || true
+            git add history.json
+            if git diff --staged --quiet; then
+              echo "원격이 이미 최신 — 추가 변경 없음"
+              exit 0
+            fi
+            git commit -m "Backfill history ($(date -u +%Y-%m-%d), retry $n)"
             sleep 3
           done
-          echo "5회 시도 후에도 push 실패"
+          echo "6회 시도 후에도 push 실패"
           exit 1
