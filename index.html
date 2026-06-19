@@ -3097,6 +3097,34 @@ function autofillName(){
 /* ── Excel 내보내기 ── */
 
 /* ── 수집용 종목목록(tickers.json) 생성 ── */
+// 폴더 선택 후 저장(지원 브라우저) → 미지원 시 기존 다운로드 방식 폴백
+// types: [{description, accept:{mime:[".ext"]}}] (파일 선택창 필터)
+async function saveBlobWithPicker(blob, filename, types){
+  // File System Access API 지원(크롬·엣지): 폴더/이름 선택창 표시
+  if(window.showSaveFilePicker){
+    try{
+      var handle=await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: types || []
+      });
+      var writable=await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return true; // 저장 완료
+    }catch(e){
+      // 사용자가 취소(AbortError)하면 조용히 종료, 그 외 오류는 폴백
+      if(e && e.name==='AbortError') return false;
+      // 미지원/권한 등 → 아래 폴백으로
+    }
+  }
+  // 폴백: 기존 방식(브라우저 기본 다운로드 폴더로 바로 받기)
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  return true;
+}
 function downloadTickersJson(){
   var d=currentData();
   if(!d.tx || !d.tx.length){
@@ -3118,12 +3146,9 @@ function downloadTickersJson(){
   var fxStart=dates.length ? dates[0] : '2021-01-01';
   var cfg={ US:us, KR:kr, fx_start:fxStart };
   var blob=new Blob([JSON.stringify(cfg,null,2)+'\n'],{type:'application/json'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url; a.download='tickers.json';
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a); URL.revokeObjectURL(url);
-  dmMsgGlobal('종목목록(tickers.json)을 내려받았습니다 · 미국 '+us.length+'종목, 한국 '+kr.length+'종목, 환율 시작일 '+fxStart+'. 이 파일을 GitHub 저장소에 올리면 다음 자동 수집부터 반영됩니다.','ok');
+  saveBlobWithPicker(blob, 'tickers.json', [{description:'JSON 파일', accept:{'application/json':['.json']}}]).then(function(saved){
+    if(saved) dmMsgGlobal('종목목록(tickers.json)을 저장했습니다 · 미국 '+us.length+'종목, 한국 '+kr.length+'종목, 환율 시작일 '+fxStart+'. 이 파일을 GitHub 저장소에 올리면 다음 자동 수집부터 반영됩니다.','ok');
+  });
 }
 // 데이터관리 패널이 화면에 없을 수도 있으므로 상태줄로도 안내
 function dmMsgGlobal(text, kind){
@@ -3162,7 +3187,10 @@ function exportExcel(){
     (d.fx||[]).map(function(r){ return [r.date,r.rate]; })
   ), '환율히스토리');
   var fname='자산관리_'+(d.snapshot&&d.snapshot.asof||new Date().toISOString().slice(0,10))+'.xlsx';
-  XLSX.writeFile(wb,fname);
+  // 통합문서를 blob으로 변환해 폴더 선택 저장(미지원 시 기본 다운로드)을 지원
+  var wbout=XLSX.write(wb, {bookType:'xlsx', type:'array'});
+  var blob=new Blob([wbout], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  saveBlobWithPicker(blob, fname, [{description:'Excel 통합 문서', accept:{'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':['.xlsx']}}]);
 }
 
 
@@ -3238,15 +3266,12 @@ function backupData(){
     githubUrl: lsGet(LS.gh)||''
   };
   var blob=new Blob([JSON.stringify(payload,null,1)],{type:'application/json'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
   var stamp=new Date().toISOString().slice(0,10);
-  a.href=url; a.download='자산관리_백업_'+stamp+'.json';
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a); URL.revokeObjectURL(url);
   var cnt=(state.manual.tx.length)+'건 거래 · '+(state.manual.flows.length)+'건 입출금 · '+
     Object.keys(state.categories).length+'개 카테고리';
-  dmMsg('백업을 내려받았습니다 ('+cnt+'). 안전한 곳에 보관하세요.', 'ok');
+  saveBlobWithPicker(blob, '자산관리_백업_'+stamp+'.json', [{description:'JSON 백업 파일', accept:{'application/json':['.json']}}]).then(function(saved){
+    if(saved) dmMsg('백업을 저장했습니다 ('+cnt+'). 안전한 곳에 보관하세요.', 'ok');
+  });
 }
 function restoreData(file){
   var rd=new FileReader();
