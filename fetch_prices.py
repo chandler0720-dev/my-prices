@@ -42,14 +42,18 @@ def load_prev(path="prices.json"):
 
 def fetch_us(tickers):
     import yfinance as yf
+    # 야후 파이낸스 심볼 보정: 사용자 티커 → 야후 조회용 심볼.
+    # 야후는 클래스 주식을 하이픈으로 표기(BRKB→BRK-B). 조회만 바꾸고 저장은 사용자 티커로 유지.
+    YH = {"BRKB": "BRK-B", "BRKA": "BRK-A", "BFB": "BF-B"}
     out, fails = {}, []
     for tk in tickers:
+        yq = YH.get(tk.upper(), tk)
         try:
-            h = yf.Ticker(tk).history(period="7d", auto_adjust=False)
+            h = yf.Ticker(yq).history(period="7d", auto_adjust=False)
             if h.empty:
                 raise ValueError("empty")
             out[tk] = round(float(h["Close"].iloc[-1]), 2)
-            print(f"  [US] {tk}: {out[tk]}")
+            print(f"  [US] {tk}: {out[tk]}" + (f" (야후 {yq})" if yq != tk else ""))
         except Exception as e:
             fails.append(tk)
             print(f"  [US] {tk} FAIL: {e}", file=sys.stderr)
