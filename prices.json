@@ -1,12 +1,12 @@
 {
  "asof": "2026-06-30",
- "asof_time": "2026-06-30 23:46",
+ "asof_time": "2026-06-30 23:57",
  "tz": "Asia/Seoul",
  "prices": [
   {
    "ticker": "DRAM",
    "mkt": "US",
-   "price": 73.0,
+   "price": 72.87,
    "ccy": "USD"
   },
   {
@@ -18,115 +18,115 @@
   {
    "ticker": "EMR",
    "mkt": "US",
-   "price": 144.0,
+   "price": 143.54,
    "ccy": "USD"
   },
   {
    "ticker": "ETN",
    "mkt": "US",
-   "price": 420.23,
+   "price": 420.71,
    "ccy": "USD"
   },
   {
    "ticker": "GEV",
    "mkt": "US",
-   "price": 1136.56,
+   "price": 1134.49,
    "ccy": "USD"
   },
   {
    "ticker": "GOOGL",
    "mkt": "US",
-   "price": 353.48,
+   "price": 354.68,
    "ccy": "USD"
   },
   {
    "ticker": "HII",
    "mkt": "US",
-   "price": 279.97,
+   "price": 278.18,
    "ccy": "USD"
   },
   {
    "ticker": "IONQ",
    "mkt": "US",
-   "price": 53.38,
+   "price": 52.97,
    "ccy": "USD"
   },
   {
    "ticker": "JEPQ",
    "mkt": "US",
-   "price": 61.17,
+   "price": 61.13,
    "ccy": "USD"
   },
   {
    "ticker": "LEU",
    "mkt": "US",
-   "price": 160.67,
+   "price": 159.1,
    "ccy": "USD"
   },
   {
    "ticker": "MRVL",
    "mkt": "US",
-   "price": 293.8,
+   "price": 295.61,
    "ccy": "USD"
   },
   {
    "ticker": "NOC",
    "mkt": "US",
-   "price": 505.74,
+   "price": 503.19,
    "ccy": "USD"
   },
   {
    "ticker": "NVDA",
    "mkt": "US",
-   "price": 197.25,
+   "price": 196.96,
    "ccy": "USD"
   },
   {
    "ticker": "QBTS",
    "mkt": "US",
-   "price": 23.91,
+   "price": 23.66,
    "ccy": "USD"
   },
   {
    "ticker": "QQQ",
    "mkt": "US",
-   "price": 731.64,
+   "price": 730.72,
    "ccy": "USD"
   },
   {
    "ticker": "QTUM",
    "mkt": "US",
-   "price": 163.63,
+   "price": 163.37,
    "ccy": "USD"
   },
   {
    "ticker": "SCHD",
    "mkt": "US",
-   "price": 31.75,
+   "price": 31.72,
    "ccy": "USD"
   },
   {
    "ticker": "SNDK",
    "mkt": "US",
-   "price": 2176.04,
+   "price": 2170.0,
    "ccy": "USD"
   },
   {
    "ticker": "SPYM",
    "mkt": "US",
-   "price": 87.59,
+   "price": 87.5,
    "ccy": "USD"
   },
   {
    "ticker": "TSM",
    "mkt": "US",
-   "price": 465.25,
+   "price": 466.09,
    "ccy": "USD"
   },
   {
    "ticker": "XOVR",
    "mkt": "US",
-   "price": 20.88,
+   "price": 20.85,
    "ccy": "USD"
   },
   {
