@@ -127,8 +127,6 @@ def main():
             return d.isoformat()
         return fx_start
 
-    print(f"대상: US {len(us_tk)}, KR {len(kr_tk)}, 시작 {fx_start} ~ {now.date()}")
-
     out_tickers = {}
     failures = []
 
