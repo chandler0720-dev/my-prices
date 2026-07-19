@@ -39,8 +39,10 @@ def load_tickers(path="tickers.json"):
         d = "".join(ch for ch in str(t).strip() if ch.isdigit())
         if d:
             kr.append(d.zfill(6))
+    # 벤치마크 지수(^KS11, ^GSPC 등). 보유 종목이 아니라 비교용이므로 US/KR과 분리한다.
+    bench = [str(t).strip() for t in cfg.get("BENCH", []) if str(t).strip()]
     fx_start = cfg.get("fx_start", "2021-01-01")
-    return us, kr, fx_start
+    return us, kr, bench, fx_start
 
 
 def load_prev(path="history.json"):
@@ -103,7 +105,8 @@ def main():
     asof = now.strftime("%Y-%m-%d %H:%M")
     print(f"백필 시작 {asof} KST")
 
-    us_tk, kr_tk, fx_start = load_tickers()
+    us_tk, kr_tk, bench_tk, fx_start = load_tickers()
+    print(f"대상: US {len(us_tk)}, KR {len(kr_tk)}, 지수 {len(bench_tk)}, 시작 {fx_start} ~ {now.date()}")
     prev = load_prev() or {}
     prev_tickers = prev.get("tickers", {})
     prev_fx = prev.get("fx", {})
@@ -168,6 +171,25 @@ def main():
         if not merged:
             failures.append(f"KR:{tk}(빈값)")
         out_tickers[tk] = {"mkt": "KR", "prices": merged}
+
+    # 벤치마크 지수 (야후 심볼 그대로, mkt=IDX로 표시해 보유 종목과 구분)
+    for tk in bench_tk:
+        prev_px = prev_tickers.get(tk, {}).get("prices", {})
+        s2 = start_for(prev_px)
+        merged = {} if full_rebuild else dict(prev_px)
+        if s2 <= now.date().isoformat():
+            try:
+                new_px = fetch_us_history(tk, s2, end)
+                merged.update(new_px)
+                print(f"  [IDX] {tk}: +{len(new_px)}일 (누적 {len(merged)})")
+            except Exception as e:
+                failures.append(f"IDX:{tk}")
+                print(f"  [IDX] {tk} FAIL: {e}", file=sys.stderr)
+                if full_rebuild and prev_px:
+                    merged = dict(prev_px)
+        if not merged:
+            failures.append(f"IDX:{tk}(빈값)")
+        out_tickers[tk] = {"mkt": "IDX", "prices": merged}
 
     # 환율
     fx_merged = {} if full_rebuild else dict(prev_fx)
