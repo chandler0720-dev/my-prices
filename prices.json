@@ -1,6 +1,6 @@
 {
- "asof": "2026-07-19",
- "asof_time": "2026-07-19 17:40",
+ "asof": "2026-07-20",
+ "asof_time": "2026-07-20 19:24",
  "tz": "Asia/Seoul",
  "prices": [
   {
@@ -138,61 +138,61 @@
   {
    "ticker": "005930",
    "mkt": "KR",
-   "price": 255000,
+   "price": 244000,
    "ccy": "KRW"
   },
   {
    "ticker": "009150",
    "mkt": "KR",
-   "price": 1277000,
+   "price": 1275000,
    "ccy": "KRW"
   },
   {
    "ticker": "012330",
    "mkt": "KR",
-   "price": 482000,
+   "price": 472500,
    "ccy": "KRW"
   },
   {
    "ticker": "012450",
    "mkt": "KR",
-   "price": 943000,
+   "price": 875000,
    "ccy": "KRW"
   },
   {
    "ticker": "016360",
    "mkt": "KR",
-   "price": 107700,
+   "price": 101700,
    "ccy": "KRW"
   },
   {
    "ticker": "017670",
    "mkt": "KR",
-   "price": 89700,
+   "price": 84700,
    "ccy": "KRW"
   },
   {
    "ticker": "032830",
    "mkt": "KR",
-   "price": 331000,
+   "price": 301500,
    "ccy": "KRW"
   },
   {
    "ticker": "069500",
    "mkt": "KR",
-   "price": 109000,
+   "price": 104095,
    "ccy": "KRW"
   },
   {
    "ticker": "379800",
    "mkt": "KR",
-   "price": 25400,
+   "price": 24940,
    "ccy": "KRW"
   },
   {
    "ticker": "379810",
    "mkt": "KR",
-   "price": 28995,
+   "price": 28055,
    "ccy": "KRW"
   }
  ],
@@ -5959,7 +5959,11 @@
   },
   {
    "date": "2026-07-17",
-   "rate": 1487.46
+   "rate": 1478.85
+  },
+  {
+   "date": "2026-07-20",
+   "rate": 1481.18
   }
  ],
  "failures": []
