@@ -1,6 +1,6 @@
 {
  "asof": "2026-08-30",
- "asof_time": "2026-08-30 22:28",
+ "asof_time": "2026-08-30 22:32",
  "tz": "Asia/Seoul",
  "prices": [
   {
@@ -145,6 +145,12 @@
    "ticker": "KO",
    "mkt": "US",
    "price": 89.66,
+   "ccy": "USD"
+  },
+  {
+   "ticker": "MU",
+   "mkt": "US",
+   "price": 932.86,
    "ccy": "USD"
   },
   {
