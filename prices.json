@@ -1,162 +1,162 @@
 {
- "asof": "2026-09-24",
- "asof_time": "2026-09-24 21:49",
+ "asof": "2026-09-25",
+ "asof_time": "2026-09-25 21:51",
  "tz": "Asia/Seoul",
  "prices": [
   {
    "ticker": "BRKB",
    "mkt": "US",
-   "price": 507.17,
+   "price": 505.18,
    "ccy": "USD"
   },
   {
    "ticker": "DRAM",
    "mkt": "US",
-   "price": 61.9,
+   "price": 60.72,
    "ccy": "USD"
   },
   {
    "ticker": "EETH",
    "mkt": "US",
-   "price": 32.4,
+   "price": 32.57,
    "ccy": "USD"
   },
   {
    "ticker": "EMR",
    "mkt": "US",
-   "price": 154.59,
+   "price": 156.14,
    "ccy": "USD"
   },
   {
    "ticker": "ETN",
    "mkt": "US",
-   "price": 438.76,
+   "price": 440.0,
    "ccy": "USD"
   },
   {
    "ticker": "GEV",
    "mkt": "US",
-   "price": 951.82,
+   "price": 955.04,
    "ccy": "USD"
   },
   {
    "ticker": "GOOGL",
    "mkt": "US",
-   "price": 337.83,
+   "price": 342.36,
    "ccy": "USD"
   },
   {
    "ticker": "HII",
    "mkt": "US",
-   "price": 269.8,
+   "price": 266.0,
    "ccy": "USD"
   },
   {
    "ticker": "IONQ",
    "mkt": "US",
-   "price": 42.54,
+   "price": 44.98,
    "ccy": "USD"
   },
   {
    "ticker": "JEPQ",
    "mkt": "US",
-   "price": 61.1,
+   "price": 61.11,
    "ccy": "USD"
   },
   {
    "ticker": "LEU",
    "mkt": "US",
-   "price": 151.31,
+   "price": 147.32,
    "ccy": "USD"
   },
   {
    "ticker": "MRVL",
    "mkt": "US",
-   "price": 260.9,
+   "price": 258.95,
    "ccy": "USD"
   },
   {
    "ticker": "NOC",
    "mkt": "US",
-   "price": 514.42,
+   "price": 508.98,
    "ccy": "USD"
   },
   {
    "ticker": "NVDA",
    "mkt": "US",
-   "price": 225.51,
+   "price": 224.58,
    "ccy": "USD"
   },
   {
    "ticker": "QBTS",
    "mkt": "US",
-   "price": 16.81,
+   "price": 17.48,
    "ccy": "USD"
   },
   {
    "ticker": "QQQ",
    "mkt": "US",
-   "price": 741.21,
+   "price": 741.1,
    "ccy": "USD"
   },
   {
    "ticker": "QTUM",
    "mkt": "US",
-   "price": 152.45,
+   "price": 152.47,
    "ccy": "USD"
   },
   {
    "ticker": "SCHD",
    "mkt": "US",
-   "price": 33.28,
+   "price": 33.1,
    "ccy": "USD"
   },
   {
    "ticker": "SNDK",
    "mkt": "US",
-   "price": 1816.57,
+   "price": 1753.62,
    "ccy": "USD"
   },
   {
    "ticker": "SPYM",
    "mkt": "US",
-   "price": 90.37,
+   "price": 90.29,
    "ccy": "USD"
   },
   {
    "ticker": "TSM",
    "mkt": "US",
-   "price": 446.57,
+   "price": 451.15,
    "ccy": "USD"
   },
   {
    "ticker": "XOVR",
    "mkt": "US",
-   "price": 21.22,
+   "price": 21.45,
    "ccy": "USD"
   },
   {
    "ticker": "TQQQ",
    "mkt": "US",
-   "price": 78.66,
+   "price": 78.58,
    "ccy": "USD"
   },
   {
    "ticker": "KO",
    "mkt": "US",
-   "price": 88.09,
+   "price": 88.1,
    "ccy": "USD"
   },
   {
    "ticker": "MU",
    "mkt": "US",
-   "price": 1071.88,
+   "price": 1080.53,
    "ccy": "USD"
   },
   {
    "ticker": "SKHY",
    "mkt": "US",
-   "price": 189.28,
+   "price": 186.37,
    "ccy": "USD"
   },
   {
@@ -6179,7 +6179,11 @@
   },
   {
    "date": "2026-09-24",
-   "rate": 1368.38
+   "rate": 1362.5
+  },
+  {
+   "date": "2026-09-25",
+   "rate": 1355.15
   }
  ],
  "failures": []
