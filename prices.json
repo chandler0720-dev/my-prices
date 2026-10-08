@@ -1,108 +1,108 @@
 {
- "asof": "2026-10-07",
- "asof_time": "2026-10-07 23:38",
+ "asof": "2026-10-08",
+ "asof_time": "2026-10-08 23:45",
  "tz": "Asia/Seoul",
  "prices": [
   {
    "ticker": "BRKB",
    "mkt": "US",
-   "price": 505.15,
+   "price": 505.74,
    "ccy": "USD"
   },
   {
    "ticker": "DRAM",
    "mkt": "US",
-   "price": 59.5,
+   "price": 58.39,
    "ccy": "USD"
   },
   {
    "ticker": "EETH",
    "mkt": "US",
-   "price": 30.82,
+   "price": 30.45,
    "ccy": "USD"
   },
   {
    "ticker": "EMR",
    "mkt": "US",
-   "price": 158.84,
+   "price": 157.88,
    "ccy": "USD"
   },
   {
    "ticker": "ETN",
    "mkt": "US",
-   "price": 425.39,
+   "price": 430.58,
    "ccy": "USD"
   },
   {
    "ticker": "GEV",
    "mkt": "US",
-   "price": 984.0,
+   "price": 1018.36,
    "ccy": "USD"
   },
   {
    "ticker": "GOOGL",
    "mkt": "US",
-   "price": 344.59,
+   "price": 351.69,
    "ccy": "USD"
   },
   {
    "ticker": "HII",
    "mkt": "US",
-   "price": 261.06,
+   "price": 264.15,
    "ccy": "USD"
   },
   {
    "ticker": "IONQ",
    "mkt": "US",
-   "price": 41.17,
+   "price": 40.49,
    "ccy": "USD"
   },
   {
    "ticker": "JEPQ",
    "mkt": "US",
-   "price": 61.13,
+   "price": 61.2,
    "ccy": "USD"
   },
   {
    "ticker": "LEU",
    "mkt": "US",
-   "price": 146.44,
+   "price": 144.97,
    "ccy": "USD"
   },
   {
    "ticker": "MRVL",
    "mkt": "US",
-   "price": 283.55,
+   "price": 276.38,
    "ccy": "USD"
   },
   {
    "ticker": "NOC",
    "mkt": "US",
-   "price": 476.85,
+   "price": 479.61,
    "ccy": "USD"
   },
   {
    "ticker": "NVDA",
    "mkt": "US",
-   "price": 237.97,
+   "price": 236.65,
    "ccy": "USD"
   },
   {
    "ticker": "QBTS",
    "mkt": "US",
-   "price": 15.13,
+   "price": 14.72,
    "ccy": "USD"
   },
   {
    "ticker": "QQQ",
    "mkt": "US",
-   "price": 754.36,
+   "price": 755.28,
    "ccy": "USD"
   },
   {
    "ticker": "QTUM",
    "mkt": "US",
-   "price": 154.15,
+   "price": 152.8,
    "ccy": "USD"
   },
   {
@@ -114,109 +114,109 @@
   {
    "ticker": "SNDK",
    "mkt": "US",
-   "price": 1701.38,
+   "price": 1648.14,
    "ccy": "USD"
   },
   {
    "ticker": "SPYM",
    "mkt": "US",
-   "price": 91.15,
+   "price": 91.32,
    "ccy": "USD"
   },
   {
    "ticker": "TSM",
    "mkt": "US",
-   "price": 474.47,
+   "price": 469.01,
    "ccy": "USD"
   },
   {
    "ticker": "XOVR",
    "mkt": "US",
-   "price": 22.1,
+   "price": 22.09,
    "ccy": "USD"
   },
   {
    "ticker": "TQQQ",
    "mkt": "US",
-   "price": 82.45,
+   "price": 82.79,
    "ccy": "USD"
   },
   {
    "ticker": "KO",
    "mkt": "US",
-   "price": 86.47,
+   "price": 86.93,
    "ccy": "USD"
   },
   {
    "ticker": "MU",
    "mkt": "US",
-   "price": 1059.73,
+   "price": 1067.9,
    "ccy": "USD"
   },
   {
    "ticker": "SKHY",
    "mkt": "US",
-   "price": 180.24,
+   "price": 174.25,
    "ccy": "USD"
   },
   {
    "ticker": "005930",
    "mkt": "KR",
-   "price": 269000,
+   "price": 263000,
    "ccy": "KRW"
   },
   {
    "ticker": "009150",
    "mkt": "KR",
-   "price": 1607000,
+   "price": 1559000,
    "ccy": "KRW"
   },
   {
    "ticker": "012330",
    "mkt": "KR",
-   "price": 371500,
+   "price": 360000,
    "ccy": "KRW"
   },
   {
    "ticker": "012450",
    "mkt": "KR",
-   "price": 979000,
+   "price": 904000,
    "ccy": "KRW"
   },
   {
    "ticker": "016360",
    "mkt": "KR",
-   "price": 88900,
+   "price": 85900,
    "ccy": "KRW"
   },
   {
    "ticker": "017670",
    "mkt": "KR",
-   "price": 86900,
+   "price": 84200,
    "ccy": "KRW"
   },
   {
    "ticker": "032830",
    "mkt": "KR",
-   "price": 278500,
+   "price": 270000,
    "ccy": "KRW"
   },
   {
    "ticker": "069500",
    "mkt": "KR",
-   "price": 108550,
+   "price": 105650,
    "ccy": "KRW"
   },
   {
    "ticker": "379800",
    "mkt": "KR",
-   "price": 23655,
+   "price": 23505,
    "ccy": "KRW"
   },
   {
    "ticker": "379810",
    "mkt": "KR",
-   "price": 27710,
+   "price": 27525,
    "ccy": "KRW"
   }
  ],
@@ -6215,7 +6215,11 @@
   },
   {
    "date": "2026-10-07",
-   "rate": 1339.1
+   "rate": 1339.74
+  },
+  {
+   "date": "2026-10-08",
+   "rate": 1341.84
   }
  ],
  "failures": []
